@@ -11,7 +11,7 @@ class TestInputStream(TestCase):
         pass
 
     def test_next(self):
-        # self.assertEqual(InputStream('').next(), '')
+        self.assertEqual(InputStream('').next(), '')
         for length in range(10):
             input = ''.join([choice(printable) for _ in range(length)])
             input_stream = InputStream(input)
