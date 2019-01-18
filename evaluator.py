@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # encoding: utf-8
 from itertools import zip_longest
+from input_stream import InputStream
+from token_stream import TokenStream
+from parser import Parser
 
 
 class Environment(object):
@@ -274,6 +277,7 @@ if __name__ == '__main__':
 """
     code = "sum = lambda(x, y) x + y; print(sum(2, 3));"
     code = "let (x=1, y= x + 1) print(x + y);"
+    code = 'x = "12'
     parser = Parser(TokenStream(InputStream(code)))
     ast = parser()
     global_env = Environment()

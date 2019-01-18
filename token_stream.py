@@ -7,14 +7,14 @@ from input_stream import InputStream
 class TokenStream(object):
     KEYWORDS = set("if then let else lambda λ true false ".split())
     ID_START = set(string.ascii_letters + 'λ_')
-    ID = set(string.ascii_letters + string.digits + 'λ_?!-<>')
+    ID = set(string.ascii_letters + string.digits + '?!-<>=')
     OP = set("+-*/%=&|<>!")
     PUNC = set(",;(){}[]")
     WHITESPACE = set(" \t\n")
 
     def __init__(self, input_stream: InputStream):
         self._input_stream = input_stream
-        self.current = None
+        self.current = {}
 
     def is_keyword(self, word: str) -> bool:
         return word in self.KEYWORDS
@@ -44,6 +44,11 @@ class TokenStream(object):
         return ''.join(l)
 
     def read_number(self) -> dict:
+        """
+        Integer and float with decimal point are allowed, and scientific notation not allowed.
+        :return:
+        """
+
         def predicate(ch: str) -> bool:
             nonlocal has_dot
             if ch == '.':
@@ -67,7 +72,7 @@ class TokenStream(object):
             'value': id,
         }
 
-    def read_escaped(self, end: str) -> str:
+    def read_string(self) -> dict:
         escaped = False
         l = []
         self._input_stream.next()
@@ -78,17 +83,14 @@ class TokenStream(object):
                 escaped = False
             elif ch == '\\':
                 escaped = True
-            elif ch == end:
-                break
+            elif ch == '"':
+                return {
+                    'type': 'str',
+                    'value': ''.join(l)
+                }
             else:
                 l.append(ch)
-        return ''.join(l)
-
-    def read_string(self) -> dict:
-        return {
-            'type': 'str',
-            'value': self.read_escaped('"'),
-        }
+        self._input_stream.croak("Has no enclosing double quote for string")
 
     def skip_comment(self) -> None:
         def predicate(ch: str) -> bool:
@@ -127,29 +129,33 @@ class TokenStream(object):
             }
         self._input_stream.croak(f"Can't handle character: {ch}")
 
-    def peek(self):
+    def peek(self) -> dict:
         if self.current:
             return self.current
         self.current = self.read_next()
         return self.current
 
-    def next(self):
-        token = self.current
-        self.current = None
-        if token:
-            return token
+    def next(self) -> dict:
+        current = self.current
+        self.current = {}
+        if current:
+            return current
         return self.read_next()
 
     def __iter__(self):
         while True:
             token = self.read_next()
-            if token is not None:
+            if token:
                 yield token
             else:
                 break
 
     def eof(self) -> bool:
-        return self.peek() is None
+        return self.peek() == {}
 
     def croak(self, msg):
         self._input_stream.croak(msg)
+
+
+if __name__ == '__main__':
+    print(list(TokenStream(InputStream('x = "2 +'))))

@@ -200,7 +200,7 @@ class Parser(object):
 
     def maybe_binary(self, left: dict, my_prec: int) -> dict:
         token = self._token_stream.peek()
-        if token is None or token['type'] != 'op':
+        if not token or token['type'] != 'op':
             return left
         his_prec = self.PRECEDENCE[token['value']]
         if his_prec > my_prec:
