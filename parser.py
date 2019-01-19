@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 from token_stream import TokenStream
+from input_stream import InputStream
 
 
 class Parser(object):
@@ -47,6 +48,13 @@ class Parser(object):
         return (token is not None) and token == {'type': 'op', 'value': ch}
 
     def delimited(self, start: str, stop: str, separator: str, parser) -> list:
+        """
+        :param start:
+        :param stop:
+        :param separator:
+        :param parser:
+        :return: a list of values returned by parser
+        """
         a = []
         first = True
         self.skip_punc(start)
@@ -63,10 +71,11 @@ class Parser(object):
         self.skip_punc(stop)
         return a
 
-    def parse_lambda(self) -> dict:
+    def parse_lambda(self, keyword) -> dict:
+        self.skip_kw(keyword)
         return {
             'type': 'lambda',
-            'name': self._token_stream.next()['value'] if self._token_stream.peek()['type'] == 'var' else None,
+            'name': self._token_stream.next()['value'] if self._token_stream.peek()['type'] == 'var' else '',
             'vars': self.delimited("(", ")", ",", self.parse_varname),
             'body': self.parse_expression(),
         }
@@ -102,7 +111,10 @@ class Parser(object):
             define = self.parse_expression()
         return {'name': name, 'def': define}
 
-    def parse_varname(self) -> dict:
+    def parse_varname(self) -> str:
+        """
+        :return: varname
+        """
         token = self._token_stream.next()
         if token['type'] != 'var':
             self._token_stream.croak('Expecting variable name')
@@ -140,6 +152,11 @@ class Parser(object):
         return ret
 
     def parse_atom(self) -> dict:
+        """
+        parse_atom does the main dispatching job, depending on the current token
+        :return:
+        """
+
         def parser() -> dict:
             if self.is_punc('('):
                 self.skip_punc('(')
@@ -154,9 +171,10 @@ class Parser(object):
                 return self.parse_let()
             if self.is_kw('true') or self.is_kw('false'):
                 return self.parse_bool()
-            if self.is_kw('lambda') or self.is_kw('λ'):
-                self._token_stream.next()
-                return self.parse_lambda()
+            if self.is_kw('lambda'):
+                return self.parse_lambda('lambda')
+            if self.is_kw('λ'):
+                return self.parse_lambda('λ')
             token = self._token_stream.next()
             if token['type'] in {'var', 'num', 'str'}:
                 return token
@@ -165,6 +183,12 @@ class Parser(object):
         return self.maybe_call(parser)
 
     def parse_prog(self) -> dict:
+        """
+        If the prog is empty, then it just returns FALSE.
+        If it has a single expression, it is returned instead of a "prog" node.
+        Otherwise it returns a "prog" node containing the expressions.
+        :return:
+        """
         prog = self.delimited("{", "}", ";", self.parse_expression)
         if len(prog) == 0:
             return {
@@ -182,12 +206,22 @@ class Parser(object):
         }
 
     def parse_expression(self) -> dict:
+        """
+        expression is a form like atom1(args1) op1 atom2(args2) op2 atom3(args3)(args)
+        :return:
+        """
+
         def parser():
             return self.maybe_binary(self.parse_atom(), 0)
 
         return self.maybe_call(parser)
 
-    def parse_call(self, func_name: str) -> dict:
+    def parse_call(self, func_name: dict) -> dict:
+        """
+        func_name is parsed by callee before calling parse_call, so parse_call only need to parse func args
+        :param func_name:
+        :return:
+        """
         return {
             'type': 'call',
             'func': func_name,
@@ -195,6 +229,13 @@ class Parser(object):
         }
 
     def maybe_call(self, parser) -> dict:
+        """
+        This function receive a function that is expected to parse the current expression.
+        If after that expression it sees a ( punctuation token, then it must be a "call" node,
+        which is what parse_call() makes.
+        :param parser:
+        :return:
+        """
         expr = parser()
         return self.parse_call(expr) if self.is_punc("(") else expr
 
@@ -217,3 +258,8 @@ class Parser(object):
 
     def unexpected(self):
         self._token_stream.croak('Unexpected token: ' + str(self._token_stream.peek()))
+
+
+if __name__ == '__main__':
+    code = ""
+    print(Parser(TokenStream(InputStream(code))).parse_toplevel())

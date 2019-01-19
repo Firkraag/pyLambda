@@ -7,7 +7,7 @@ from input_stream import InputStream
 class TokenStream(object):
     KEYWORDS = set("if then let else lambda λ true false ".split())
     ID_START = set(string.ascii_letters + 'λ_')
-    ID = set(string.ascii_letters + string.digits + '?!-<>=')
+    ID = set(string.ascii_letters + string.digits + 'λ_?!-<>=')
     OP = set("+-*/%=&|<>!")
     PUNC = set(",;(){}[]")
     WHITESPACE = set(" \t\n")
