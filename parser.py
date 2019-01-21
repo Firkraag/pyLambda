@@ -200,9 +200,11 @@ class Parser(object):
             return {'type': 'prog', 'prog': prog}
 
     def parse_bool(self) -> dict:
+        token = self._token_stream.next()
+        assert token['type'] == 'kw'
         return {
             'type': 'bool',
-            'value': self._token_stream.next()['value'] == 'true',
+            'value': token['value'] == 'true',
         }
 
     def parse_expression(self) -> dict:
@@ -240,6 +242,13 @@ class Parser(object):
         return self.parse_call(expr) if self.is_punc("(") else expr
 
     def maybe_binary(self, left: dict, my_prec: int) -> dict:
+        """
+        maybe_binary(left, my_prec) is used to compose binary expressions like 1 + 2 * 3.
+        if operator is =, then ast type is assign, otherwise, ast type is binary
+        :param left:
+        :param my_prec:
+        :return:
+        """
         token = self._token_stream.peek()
         if not token or token['type'] != 'op':
             return left

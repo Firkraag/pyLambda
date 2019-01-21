@@ -68,6 +68,9 @@ class TestParser(TestCase):
                                                                             {'type': 'var', 'value': 'foo'}]})
         parser = Parser(TokenStream(InputStream('')))
         self.assertEqual(parser.parse_toplevel(), {'type': 'prog', 'prog': []})
+        parser = Parser(TokenStream(InputStream('a 1 2')))
+        with self.assertRaises(Exception):
+            parser.parse_toplevel()
 
     def test_parse_prog(self):
         parser = Parser(TokenStream(InputStream('{}')))
@@ -137,7 +140,11 @@ class TestParser(TestCase):
             parser.parse_atom()
 
     def test_parse_bool(self):
-        self.fail()
+        parser = Parser(TokenStream(InputStream('true')))
+        self.assertEqual(parser.parse_bool(), {"type": "bool", "value": True})
+        parser = Parser(TokenStream(InputStream('false')))
+        self.assertEqual(parser.parse_bool(), {"type": "bool", "value": False})
+
 
     def test_parse_expression(self):
         parser = Parser(TokenStream(InputStream('1() + "ab"()(1, "ab")')))
@@ -154,6 +161,9 @@ class TestParser(TestCase):
             'then': {"type": "call", "func": {"type": "call", "func": {"type": "num", "value": 2.0}, "args": []},
                      'args': []},
         }, 'args': []})
+        parser = Parser(TokenStream(InputStream('1 + ')))
+        with self.assertRaises(Exception):
+            parser.parse_expression()
 
     def test_parse_call(self):
         parser = Parser(TokenStream(InputStream('(b, c)')))
@@ -171,7 +181,19 @@ class TestParser(TestCase):
         self.assertTrue(parser.maybe_call(parser.parse_varname), {"type": "var", "value": "a"})
 
     def test_maybe_binary(self):
-        self.fail()
+        parser = Parser(TokenStream(InputStream('a + b * c')))
+        self.assertEqual(parser.maybe_binary(parser.parse_atom(), 0),
+                         {"type": "binary", 'operator': '+', 'left': {"type": "var", 'value': 'a'},
+                          'right': {"type": "binary", 'operator': '*', 'left': {"type": "var", 'value': 'b'},
+                                    'right': {"type": "var", "value": 'c'}}})
+        parser = Parser(TokenStream(InputStream('a + b = c')))
+        self.assertEqual(parser.maybe_binary(parser.parse_atom(), 0),
+                         {"type": "assign", 'operator': '=',
+                          'left': {"type": "binary", "operator": '+', 'left': {"type": "var", "value": 'a'},
+                                   'right': {"type": "var", 'value': 'b'}},
+                          'right': {"type": "var", "value": 'c'}})
 
     def test_unexpected(self):
-        self.fail()
+        parser = Parser(TokenStream(InputStream('a + b * c')))
+        with self.assertRaises(Exception):
+            parser.unexpected()
