@@ -35,7 +35,7 @@ class Parser(object):
 
     def is_kw(self, ch: str) -> bool:
         token = self._token_stream.peek()
-        return (token is not None) and token == {'type': 'kw', 'value': ch}
+        return token == {'type': 'kw', 'value': ch}
 
     def skip_op(self, ch: str) -> None:
         if self.is_op(ch):
@@ -45,7 +45,7 @@ class Parser(object):
 
     def is_op(self, ch: str) -> bool:
         token = self._token_stream.peek()
-        return (token is not None) and token == {'type': 'op', 'value': ch}
+        return token == {'type': 'op', 'value': ch}
 
     def delimited(self, start: str, stop: str, separator: str, parser) -> list:
         """
@@ -103,7 +103,11 @@ class Parser(object):
             }
             return d
 
-    def parse_vardef(self):
+    def parse_vardef(self)->dict:
+        """
+        parse expression of the form like 'var = expression'
+        :return:
+        """
         name = self.parse_varname()
         define = False
         if self.is_op('='):
@@ -269,6 +273,6 @@ class Parser(object):
         self._token_stream.croak('Unexpected token: ' + str(self._token_stream.peek()))
 
 
-if __name__ == '__main__':
-    code = ""
-    print(Parser(TokenStream(InputStream(code))).parse_toplevel())
+# if __name__ == '__main__':
+#     code = ""
+#     print(Parser(TokenStream(InputStream(code))).parse_toplevel())

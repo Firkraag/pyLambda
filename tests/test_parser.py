@@ -8,22 +8,40 @@ from input_stream import InputStream
 
 class TestParser(TestCase):
     def test_skip_punc(self):
-        self.fail()
+        parser = Parser(TokenStream(InputStream(';')))
+        parser.skip_punc(';')
+        self.assertTrue(parser._token_stream.eof())
+        parser = Parser(TokenStream(InputStream(';')))
+        with self.assertRaises(Exception):
+            parser.skip_punc('e')
 
     def test_is_punc(self):
-        self.fail()
+        parser = Parser(TokenStream(InputStream(';')))
+        self.assertTrue(parser.is_punc(';'))
 
     def test_skip_kw(self):
-        self.fail()
+        parser = Parser(TokenStream(InputStream('else')))
+        parser.skip_kw('else')
+        self.assertTrue(parser._token_stream.eof())
+        parser = Parser(TokenStream(InputStream('else')))
+        with self.assertRaises(Exception):
+            parser.skip_kw('e')
 
     def test_is_kw(self):
-        self.fail()
+        parser = Parser(TokenStream(InputStream('if')))
+        self.assertTrue(parser.is_kw('if'))
 
     def test_skip_op(self):
-        self.fail()
+        parser = Parser(TokenStream(InputStream('>')))
+        parser.skip_op('>')
+        self.assertTrue(parser._token_stream.eof())
+        parser = Parser(TokenStream(InputStream('>')))
+        with self.assertRaises(Exception):
+            parser.skip_op('<')
 
     def test_is_op(self):
-        self.fail()
+        parser = Parser(TokenStream(InputStream('>')))
+        self.assertTrue(parser.is_op('>'))
 
     def test_parse_varname(self):
         parser = Parser(TokenStream(InputStream('foo')))
@@ -52,10 +70,24 @@ class TestParser(TestCase):
                          {'type': 'lambda', 'name': 'foo', 'vars': [], 'body': {'type': 'str', 'value': 'abc'}})
 
     def test_parse_let(self):
-        self.fail()
+        parser = Parser(TokenStream(InputStream('let (a = 1, b = 2) 1')))
+        self.assertEqual(parser.parse_let(),
+                         {"type": "let", "vars": [{"name": "a", "def": {"type": "num", "value": 1.0}},
+                                                  {"name": "b",
+                                                   "def": {"type": "num", "value": 2.0}}],
+                          'body': {"type": "num", "value": 1.0}})
+        parser = Parser(TokenStream(InputStream('let foo (a = 1, b = 2) foo')))
+        self.assertEqual(parser.parse_let(), {"type": "call", "func": {
+            "type": "lambda",
+            "name": "foo",
+            "vars": ["a", "b"],
+            "body": {"type": "var", "value": "foo"}},
+                                              "args": [{"type": "num", "value": 1.0}, {"type": "num", "value": 2.0}],
+                                              })
 
     def test_parse_vardef(self):
-        self.fail()
+        parser = Parser(TokenStream(InputStream('a = 1')))
+        self.assertEqual(parser.parse_vardef(), {"name": "a", "def": {"type": "num", "value": 1.0}})
 
     def test_parse_toplevel(self):
         parser = Parser(TokenStream(InputStream('1;"a";foo')))
@@ -71,6 +103,21 @@ class TestParser(TestCase):
         parser = Parser(TokenStream(InputStream('a 1 2')))
         with self.assertRaises(Exception):
             parser.parse_toplevel()
+
+    def test_call(self):
+        parser = Parser(TokenStream(InputStream('1;"a";foo')))
+        self.assertEqual(parser(), {'type': 'prog', 'prog': [{'type': 'num', 'value': 1.0},
+                                                             {'type': 'str', 'value': 'a'},
+                                                             {'type': 'var', 'value': 'foo'}]})
+        parser = Parser(TokenStream(InputStream('1;"a";foo;')))
+        self.assertEqual(parser(), {'type': 'prog', 'prog': [{'type': 'num', 'value': 1.0},
+                                                             {'type': 'str', 'value': 'a'},
+                                                             {'type': 'var', 'value': 'foo'}]})
+        parser = Parser(TokenStream(InputStream('')))
+        self.assertEqual(parser(), {'type': 'prog', 'prog': []})
+        parser = Parser(TokenStream(InputStream('a 1 2')))
+        with self.assertRaises(Exception):
+            parser()
 
     def test_parse_prog(self):
         parser = Parser(TokenStream(InputStream('{}')))
@@ -126,6 +173,12 @@ class TestParser(TestCase):
         parser = Parser(TokenStream(InputStream('λ (n) 1')))
         self.assertEqual(parser.parse_atom(),
                          {"type": "lambda", "name": "", "vars": ["n"], "body": {"type": "num", "value": 1.0}})
+        parser = Parser(TokenStream(InputStream('let (a = 1, b = 2) 1')))
+        self.assertEqual(parser.parse_atom(),
+                         {"type": "let", "vars": [{"name": "a", "def": {"type": "num", "value": 1.0}},
+                                                  {"name": "b",
+                                                   "def": {"type": "num", "value": 2.0}}],
+                          'body': {"type": "num", "value": 1.0}})
         parser = Parser(TokenStream(InputStream('123.1')))
         self.assertEqual(parser.parse_atom(), {"type": "num", "value": 123.1})
         parser = Parser(TokenStream(InputStream('a')))
@@ -135,7 +188,7 @@ class TestParser(TestCase):
         parser = Parser(TokenStream(InputStream('')))
         with self.assertRaises(Exception):
             parser.parse_atom()
-        parser = Parser(TokenStream(InputStream('\x08')))
+        parser = Parser(TokenStream(InputStream('&')))
         with self.assertRaises(Exception):
             parser.parse_atom()
 
@@ -144,7 +197,6 @@ class TestParser(TestCase):
         self.assertEqual(parser.parse_bool(), {"type": "bool", "value": True})
         parser = Parser(TokenStream(InputStream('false')))
         self.assertEqual(parser.parse_bool(), {"type": "bool", "value": False})
-
 
     def test_parse_expression(self):
         parser = Parser(TokenStream(InputStream('1() + "ab"()(1, "ab")')))
