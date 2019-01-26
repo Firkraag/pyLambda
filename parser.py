@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # encoding: utf-8
 from token_stream import TokenStream
-from input_stream import InputStream
 
 
 class Parser(object):
