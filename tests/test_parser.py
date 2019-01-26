@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 from unittest import TestCase
-from parser import Parser
+from parse import Parser
 from token_stream import TokenStream
 from input_stream import InputStream
 

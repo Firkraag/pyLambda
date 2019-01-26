@@ -11,8 +11,11 @@ def evaluate(ast: dict, env: Environment):
     variable are fetched from the environment;
     For assignment, we need to check if the left side is a "var" token(if not,
     throw an error;we don't support assignment to anything else for now),
-    then we use env.set to set the value, note that the value needs to be computed firstttt
-    by calling evaluate recursively;
+    then we use env.set to set the value, note that the value needs to be computed first
+    by calling evaluate recursively. And in any environment except global environment,
+    the assigned variable must be defined previously in some environment. Currently,
+    variables are defined only when an lambda function is called or
+    an let node is evaluated. That means we cannot define a new variable inside lambda function body.
     A binary node applies node operator to node left operand and right operand.
     A lambda node will actually result in a Python closure, so it will be callable from Python
     just like an ordinary function.
@@ -23,6 +26,8 @@ def evaluate(ast: dict, env: Environment):
     or return False
     A "prog" is a sequence of expressions. We just evaluate them in order and return the value of the last
     one. For am empty sequence, the return value is initialized to False.
+    A named let of a form like 'let foo(var = value) body' is equivalent to '(lambda foo(var) body)(value)'
+
     :param ast:
     :param env:
     :return:
@@ -68,6 +73,10 @@ def make_lambda(env, ast):
         for name, value in zip_longest(names, args, fillvalue=False):
             scope.define(name, value)
         return evaluate(ast['body'], scope)
+
+    # if ast['name']:
+    #     env = env.extend()
+    #     env.define(ast['name'], lambda_function)
 
     return lambda_function
 

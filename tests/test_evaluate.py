@@ -3,6 +3,9 @@
 from unittest import TestCase
 from evaluator import evaluate
 from environment import Environment
+from input_stream import InputStream
+from token_stream import TokenStream
+from parse import Parser
 
 
 class TestEvaluate(TestCase):
@@ -34,6 +37,9 @@ class TestEvaluate(TestCase):
             {"type": "assign", "left": {"type": "var", "value": "a"}, "right": {"type": "str", "value": "foo"}},
             {"type": "var", "value": "a"}]}
         self.assertEqual(evaluate(ast, Environment()), "foo")
+        ast = {"type": "assign", "left": {"type": "var", "value": "a"}, "right": {"type": "str", "value": "foo"}}
+        with self.assertRaises(Exception):
+            evaluate(ast, Environment(Environment()))
         ast = {"type": "call", "func": {"type": "lambda", "vars": ["a"], "body": {"type": "var", "value": "a"}},
                "args": [{"type": "num", "value": 1}]}
         self.assertEqual(evaluate(ast, Environment()), 1.0)
