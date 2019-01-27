@@ -80,6 +80,11 @@ class Parser(object):
         }
 
     def parse_let(self) -> dict:
+        """
+        When it is a named let, if an arg is not followed by some expression,
+        then a false value is assigned to the arg by the parser.
+        :return:
+        """
         self.skip_kw('let')
         if self._token_stream.peek()['type'] == 'var':
             name = self._token_stream.next()['value']
@@ -92,23 +97,26 @@ class Parser(object):
                     'vars': [define['name'] for define in defs],
                     'body': self.parse_expression(),
                 },
-                'args': [define['def'] for define in defs],
+                'args': list(
+                    map(lambda define: define['def'] if define['def'] else {"type": "bool", "value": False}, defs))
             }
         else:
-            d = {
+            return {
                 'type': 'let',
                 'vars': self.delimited('(', ')', ',', self.parse_vardef),
                 'body': self.parse_expression(),
             }
-            return d
 
-    def parse_vardef(self)->dict:
+    def parse_vardef(self) -> dict:
         """
-        parse expression of the form like 'var = expression'
+        Parse expression of the form like 'var [= expression]'
+        If var is followed by an expression, the value of key 'def'
+        is the ast returned by parse_expression, otherwise the value of key 'def'
+        is None.
         :return:
         """
         name = self.parse_varname()
-        define = False
+        define = None
         if self.is_op('='):
             self._token_stream.next()
             define = self.parse_expression()
@@ -270,7 +278,6 @@ class Parser(object):
 
     def unexpected(self):
         self._token_stream.croak('Unexpected token: ' + str(self._token_stream.peek()))
-
 
 # if __name__ == '__main__':
 #     code = ""

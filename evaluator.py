@@ -62,10 +62,17 @@ def evaluate(ast: dict, env: Environment):
     elif type == 'call':
         func = evaluate(ast['func'], env)
         return func(*[evaluate(arg, env) for arg in ast['args']])
+    elif type == 'let':
+        for var in ast['vars']:
+            scope = env.extend()
+            # if an arg is not assigned some value, then False is assigned to the arg by the evaluator.
+            scope.define(var['name'], evaluate(var['def'], env) if var['def'] else False)
+            env = scope
+        return evaluate(ast['body'], env)
     raise Exception(f"I don't know how to evaluate {ast['type']}")
 
 
-def make_lambda(env, ast):
+def make_lambda(env: Environment, ast: dict):
     def lambda_function(*args):
         names = ast['vars']
         assert len(names) >= len(args)
@@ -74,9 +81,9 @@ def make_lambda(env, ast):
             scope.define(name, value)
         return evaluate(ast['body'], scope)
 
-    # if ast['name']:
-    #     env = env.extend()
-    #     env.define(ast['name'], lambda_function)
+    if ast['name']:
+        env = env.extend()
+        env.define(ast['name'], lambda_function)
 
     return lambda_function
 

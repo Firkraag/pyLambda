@@ -84,10 +84,26 @@ class TestParser(TestCase):
             "body": {"type": "var", "value": "foo"}},
                                               "args": [{"type": "num", "value": 1.0}, {"type": "num", "value": 2.0}],
                                               })
+        parser = Parser(TokenStream(InputStream('let foo (a, b = 2) foo')))
+        self.assertEqual(parser.parse_let(), {"type": "call", "func": {
+            "type": "lambda",
+            "name": "foo",
+            "vars": ["a", "b"],
+            "body": {"type": "var", "value": "foo"}},
+                                              "args": [{"type": "bool", "value": False}, {"type": "num", "value": 2.0}],
+                                              })
+        parser = Parser(TokenStream(InputStream('let (a, b = 2) 1')))
+        self.assertEqual(parser.parse_let(),
+                         {"type": "let", "vars": [{"name": "a", "def": None},
+                                                  {"name": "b",
+                                                   "def": {"type": "num", "value": 2.0}}],
+                          'body': {"type": "num", "value": 1.0}})
 
     def test_parse_vardef(self):
         parser = Parser(TokenStream(InputStream('a = 1')))
         self.assertEqual(parser.parse_vardef(), {"name": "a", "def": {"type": "num", "value": 1.0}})
+        parser = Parser(TokenStream(InputStream('a')))
+        self.assertEqual(parser.parse_vardef(), {"name": "a", "def": None})
 
     def test_parse_toplevel(self):
         parser = Parser(TokenStream(InputStream('1;"a";foo')))
