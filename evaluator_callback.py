@@ -39,12 +39,14 @@ def evaluate(ast: dict, env: Environment, callback):
                     def define_callback(value):
                         scope.define(var['name'], value)
                         loop(scope, i + 1)
+
                     evaluate(var['def'], env, define_callback)
                 else:
                     scope.define(var['name'], False)
                     loop(scope, i + 1)
             else:
                 evaluate(ast['body'], env, callback)
+
         loop(env, 0)
     elif type == 'prog':
         def loop(last, i):
@@ -52,6 +54,7 @@ def evaluate(ast: dict, env: Environment, callback):
                 evaluate(ast['prog'][i], env, lambda value: loop(value, i + 1))
             else:
                 callback(last)
+
         loop(False, 0)
     elif type == 'call':
         def call_callback(func):
@@ -59,11 +62,14 @@ def evaluate(ast: dict, env: Environment, callback):
                 def arg_callback(arg):
                     args.append(arg)
                     loop(args, i + 1)
+
                 if i < len(ast['args']):
                     evaluate(ast['args'][i], env, arg_callback)
                 else:
                     func(*args)
+
             loop([callback], 0)
+
         evaluate(ast['func'], env, call_callback)
     else:
         raise Exception("I don'tt know how to evaluate " + ast['type'])
