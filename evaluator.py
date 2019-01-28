@@ -69,7 +69,8 @@ def evaluate(ast: dict, env: Environment):
             scope.define(var['name'], evaluate(var['def'], env) if var['def'] else False)
             env = scope
         return evaluate(ast['body'], env)
-    raise Exception(f"I don't know how to evaluate {ast['type']}")
+    else:
+        raise Exception(f"I don't know how to evaluate {ast['type']}")
 
 
 def make_lambda(env: Environment, ast: dict):

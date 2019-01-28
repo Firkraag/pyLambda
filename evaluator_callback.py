@@ -5,74 +5,78 @@ from utils import apply_op
 from itertools import zip_longest
 
 
-def evaluate_callback(exp: dict, env: Environment, callback):
-    type = exp['type']
+def evaluate(ast: dict, env: Environment, callback):
+    type = ast['type']
     if type in {'num', 'str', 'bool'}:
-        callback(exp['value'])
+        callback(ast['value'])
     elif type == 'var':
-        callback(env.get(exp['value']))
+        callback(env.get(ast['value']))
     elif type == 'assign':
-        if exp['left']['type'] != 'var':
-            raise Exception(f"Cannot assign to {exp['left']}")
-        evaluate_callback(exp['right'], env, lambda right: callback(env.set(exp['left']['value'], right)))
+        if ast['left']['type'] != 'var':
+            raise Exception(f"Cannot assign to {ast['left']}")
+        evaluate(ast['right'], env, lambda right: callback(env.set(ast['left']['value'], right)))
     elif type == 'binary':
-        evaluate_callback(exp['left'], env, lambda left: evaluate_callback(exp['right'], env, lambda right: callback(
-            apply_op(exp['operator'], left, right))))
-        # return apply_op(exp['operator'], evaluate(exp['left'], env), evaluate(exp['right'], env))
+        evaluate(ast['left'], env, lambda left: evaluate(ast['right'], env, lambda right: callback(
+            apply_op(ast['operator'], left, right))))
     elif type == 'lambda':
-        callback(make_lambda_callback(env, exp))
+        callback(make_lambda(env, ast))
     elif type == 'if':
         def if_callback(cond):
             if cond is not False:
-                evaluate_callback(exp['then'], env, callback)
-            elif 'else' in exp:
-                evaluate_callback(exp['else'], env, callback)
+                evaluate(ast['then'], env, callback)
+            elif 'else' in ast:
+                evaluate(ast['else'], env, callback)
             else:
                 callback(False)
 
-        evaluate_callback(exp['cond'], env, if_callback)
+        evaluate(ast['cond'], env, if_callback)
     elif type == 'let':
-        scope = env.extend()
-        for var in exp['vars']:
-            # scope = env.extend()
-            print(var)
-            if var['def']:
-                evaluate_callback(var['def'], env, lambda value: scope.define(var['name'], value))
+        def loop(env, i):
+            if i < len(ast['vars']):
+                var = ast['vars'][i]
+                scope = env.extend()
+                if var['def']:
+                    def define_callback(value):
+                        scope.define(var['name'], value)
+                        loop(scope, i + 1)
+                    evaluate(var['def'], env, define_callback)
+                else:
+                    scope.define(var['name'], False)
+                    loop(scope, i + 1)
             else:
-                scope.define(var['name'], False)
-            # scope.define(var['name'], evaluate(var['def'], env) if var['def'] else False)
-            # env = scope
-        print('aaaa')
-        evaluate_callback(exp['body'], scope, callback)
+                evaluate(ast['body'], env, callback)
+        loop(env, 0)
     elif type == 'prog':
-        def prog_callback(value):
-            nonlocal val
-            val = value
-
-        val = False
-        for expression in exp['prog']:
-            evaluate_callback(expression, env, prog_callback)
-        callback(val)
+        def loop(last, i):
+            if i < len(ast['prog']):
+                evaluate(ast['prog'][i], env, lambda value: loop(value, i + 1))
+            else:
+                callback(last)
+        loop(False, 0)
     elif type == 'call':
         def call_callback(func):
-            args = []
-            for arg in exp['args']:
-                evaluate_callback(arg, env, lambda value: args.append(value))
-            func(callback, *args)
-
-        evaluate_callback(exp['func'], env, call_callback)
+            def loop(args, i):
+                def arg_callback(arg):
+                    args.append(arg)
+                    loop(args, i + 1)
+                if i < len(ast['args']):
+                    evaluate(ast['args'][i], env, arg_callback)
+                else:
+                    func(*args)
+            loop([callback], 0)
+        evaluate(ast['func'], env, call_callback)
     else:
-        raise Exception("I don'tt know how to evaluate " + exp['type'])
+        raise Exception("I don'tt know how to evaluate " + ast['type'])
 
 
-def make_lambda_callback(env, exp):
+def make_lambda(env, exp):
     def lambda_function(callback, *args):
         scope = env.extend()
         names = exp['vars']
-        args = args[:len(names)]
+        assert len(names) >= len(args)
         for name, value in zip_longest(names, args, fillvalue=False):
             scope.define(name, value)
-        evaluate_callback(exp['body'], scope, callback)
+        evaluate(exp['body'], scope, callback)
 
     if exp['name']:
         env = env.extend()
