@@ -2,7 +2,7 @@
 # encoding: utf-8
 from unittest import TestCase
 from input_stream import InputStream
-from token_stream import TokenStream
+from token_stream import TokenStream, Token
 import string
 
 
@@ -30,23 +30,23 @@ class TestTokenStream(TestCase):
 
     def test_is_id_start(self):
         for id_start in self.ID_START:
-            self.assertTrue(TokenStream.is_id_start(id_start))
-        self.assertFalse(TokenStream.is_digit(';'))
+            self.assertTrue(TokenStream.is_identifier_start(id_start))
+        self.assertFalse(TokenStream.is_identifier_start(';'))
 
     def test_is_id(self):
         for id in self.ID:
-            self.assertTrue(TokenStream.is_id(id))
-        self.assertFalse(TokenStream.is_digit(';'))
+            self.assertTrue(TokenStream.is_identifier(id))
+        self.assertFalse(TokenStream.is_identifier(';'))
 
     def test_is_op_char(self):
         for op in self.OP:
-            self.assertTrue(TokenStream.is_op_char(op))
-        self.assertFalse(TokenStream.is_op_char(';'))
+            self.assertTrue(TokenStream.is_operator(op))
+        self.assertFalse(TokenStream.is_operator(';'))
 
     def test_is_punc(self):
         for punc in self.PUNC:
-            self.assertTrue(TokenStream.is_punc(punc))
-        self.assertFalse(TokenStream.is_punc('a'))
+            self.assertTrue(TokenStream.is_punctuation(punc))
+        self.assertFalse(TokenStream.is_punctuation('a'))
 
     def test_is_whitespace(self):
         for whitespace in self.WHITESPACE:
@@ -61,33 +61,33 @@ class TestTokenStream(TestCase):
     def test_read_number(self):
         token_stream = TokenStream(InputStream('123='))
         result = token_stream._read_number()
-        self.assertEqual({'type': 'num', 'value': 123.0}, result)
+        self.assertEqual(Token('num', 123.0), result)
 
         token_stream = TokenStream(InputStream('123.3.='))
         result = token_stream._read_number()
-        self.assertEqual({'type': 'num', 'value': 123.3}, result)
+        self.assertEqual(Token('num', 123.3), result)
 
     def test_read_ident(self):
         token_stream = TokenStream(InputStream('a=1'))
-        result = token_stream._read_ident()
-        self.assertEqual({'type': 'var', 'value': 'a=1'}, result)
+        result = token_stream._read_identifier()
+        self.assertEqual(Token('var', 'a=1'), result)
 
         token_stream = TokenStream(InputStream('a = 1'))
-        result = token_stream._read_ident()
-        self.assertEqual({'type': 'var', 'value': 'a'}, result)
+        result = token_stream._read_identifier()
+        self.assertEqual(Token('var', 'a'), result)
 
         token_stream = TokenStream(InputStream('let(a = 1'))
-        result = token_stream._read_ident()
-        self.assertEqual({'type': 'kw', 'value': 'let'}, result)
+        result = token_stream._read_identifier()
+        self.assertEqual(Token('kw', 'let'), result)
 
     def test_read_string(self):
         token_stream = TokenStream(InputStream('"ab"'))
         result = token_stream._read_string()
-        self.assertEqual({'type': 'str', 'value': 'ab'}, result)
+        self.assertEqual(Token('str', 'ab'), result)
 
         token_stream = TokenStream(InputStream('"ab\\c"'))
         result = token_stream._read_string()
-        self.assertEqual({'type': 'str', 'value': 'abc'}, result)
+        self.assertEqual(Token('str', 'abc'), result)
 
         token_stream = TokenStream(InputStream('"abc'))
         with self.assertRaises(Exception):
@@ -100,37 +100,39 @@ class TestTokenStream(TestCase):
 
     def test_read_next(self):
         token_stream = TokenStream(InputStream(' # comment\n123 abc "nba" let a=2  >=;'))
-        self.assertEqual(token_stream._read_next(), {'type': 'num', 'value': 123.0})
-        self.assertEqual(token_stream._read_next(), {'type': 'var', 'value': 'abc'})
-        self.assertEqual(token_stream._read_next(), {'type': 'str', 'value': 'nba'})
-        self.assertEqual(token_stream._read_next(), {'type': 'kw', 'value': 'let'})
-        self.assertEqual(token_stream._read_next(), {'type': 'var', 'value': 'a=2'})
-        self.assertEqual(token_stream._read_next(), {'type': 'op', 'value': '>='})
-        self.assertEqual(token_stream._read_next(), {'type': 'punc', 'value': ';'})
-        self.assertEqual(token_stream._read_next(), {})
+        self.assertEqual(token_stream._read_next(), Token('num', 123.0))
+        self.assertEqual(token_stream._read_next(), Token('var', 'abc'))
+        self.assertEqual(token_stream._read_next(), Token('str', 'nba'))
+        self.assertEqual(token_stream._read_next(), Token('kw', 'let'))
+        self.assertEqual(token_stream._read_next(), Token('var', 'a=2'))
+        self.assertEqual(token_stream._read_next(), Token('op', '>='))
+        self.assertEqual(token_stream._read_next(), Token('punc', ';'))
+        self.assertEqual(token_stream._read_next(), Token('null', 'null'))
         token_stream = TokenStream(InputStream('\x08'))
         with self.assertRaises(Exception):
             token_stream._read_next()
 
         token_stream = TokenStream(InputStream('λ (n) 1'))
-        self.assertEqual(token_stream._read_next(), {"type": "kw", "value": 'λ'})
+        self.assertEqual(token_stream._read_next(), Token("kw", 'λ'))
 
     def test_peek_and_next(self):
         token_stream = TokenStream(InputStream(' # comment\n123 abc let a=2  >=;'))
-        self.assertEqual(token_stream.peek(), {'type': 'num', 'value': 123.0})
-        self.assertEqual(token_stream.peek(), {'type': 'num', 'value': 123.0})
-        self.assertEqual(token_stream.next(), {'type': 'num', 'value': 123.0})
+        self.assertEqual(token_stream.peek(), Token('num', 123.0))
+        self.assertEqual(token_stream.peek(), Token('num', 123.0))
+        self.assertEqual(token_stream.next(), Token('num', 123.0))
 
         token_stream = TokenStream(InputStream(' # comment\n123 abc let a=2  >=;'))
-        self.assertEqual(token_stream.next(), {'type': 'num', 'value': 123.0})
-        self.assertEqual(token_stream.peek(), {'type': 'var', 'value': 'abc'})
+        self.assertEqual(token_stream.next(), Token('num', 123.0))
+        self.assertEqual(token_stream.next(), Token('var', 'abc'))
+        self.assertEqual(token_stream.next(), Token('kw', 'let'))
+        self.assertEqual(token_stream.next(), Token('var', 'a=2'))
 
         token_stream = TokenStream(InputStream('λ (n) 1'))
-        self.assertEqual(token_stream.next(), {"type": "kw", "value": "λ"})
-        self.assertEqual(token_stream.next(), {"type": "punc", "value": "("})
-        self.assertEqual(token_stream.next(), {"type": "var", "value": "n"})
-        self.assertEqual(token_stream.next(), {"type": "punc", "value": ")"})
-        self.assertEqual(token_stream.next(), {"type": "num", "value": 1.0})
+        self.assertEqual(token_stream.next(), Token("kw", "λ"))
+        self.assertEqual(token_stream.next(), Token("punc", "("))
+        self.assertEqual(token_stream.next(), Token("var", "n"))
+        self.assertEqual(token_stream.next(), Token("punc", ")"))
+        self.assertEqual(token_stream.next(), Token("num", 1.0))
 
     def test_eof(self):
         token_stream = TokenStream(InputStream(' # comment\n'))

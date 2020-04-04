@@ -2,20 +2,25 @@
 # encoding: utf-8
 import string
 from input_stream import InputStream
+from typing import Dict, Optional, Callable, List
+from collections import namedtuple
+
+Token = namedtuple('Token', 'type value')
+NullToken = Token('null', 'null')
 
 
-class TokenStream(object):
+class TokenStream:
     KEYWORDS = set("if then let else lambda λ true false ".split())
-    ID_START = set(string.ascii_letters + 'λ_')
-    ID = set(string.ascii_letters + string.digits + 'λ_?!-<>=')
-    OP = set("+-*/%=&|<>!")
-    PUNC = set(",;(){}[]")
+    IDENTIFIER_START = set(string.ascii_letters + 'λ_')
+    IDENTIFIER = set(string.ascii_letters + string.digits + 'λ_?!-<>=')
+    OPERATOR = set("+-*/%=&|<>!")
+    PUNCTUATION = set(",;(){}[]")
     WHITESPACE = set(" \t\n")
     DIGITS = set(string.digits)
 
     def __init__(self, input_stream: InputStream):
-        self._input_stream = input_stream
-        self.current = {}
+        self._input_stream: InputStream = input_stream
+        self.current: Token = NullToken
 
     @classmethod
     def is_keyword(cls, word: str) -> bool:
@@ -26,37 +31,39 @@ class TokenStream(object):
         return ch in cls.DIGITS
 
     @classmethod
-    def is_id_start(cls, ch: str) -> bool:
-        return ch in cls.ID_START
+    def is_identifier_start(cls, ch: str) -> bool:
+        return ch in cls.IDENTIFIER_START
 
     @classmethod
-    def is_id(cls, ch: str) -> bool:
-        return ch in cls.ID
+    def is_identifier(cls, ch: str) -> bool:
+        return ch in cls.IDENTIFIER
 
     @classmethod
-    def is_op_char(cls, ch: str) -> bool:
-        return ch in cls.OP
+    def is_operator(cls, ch: str) -> bool:
+        return ch in cls.OPERATOR
 
     @classmethod
-    def is_punc(cls, ch: str) -> bool:
-        return ch in cls.PUNC
+    def is_punctuation(cls, ch: str) -> bool:
+        return ch in cls.PUNCTUATION
 
     @classmethod
     def is_whitespace(cls, ch: str) -> bool:
         return ch in cls.WHITESPACE
 
-    def _read_while(self, predicate) -> str:
+    def _read_while(self, predicate: Callable[[str], bool]) -> str:
         """
-        Advance input_stream while predidate evaluates true
+        Advance input_stream while applying next character to predidate
+        evaluates true
         :param predicate:
-        :return:
+        :return: the string read while predidate is true
         """
-        l = []
-        while (not self._input_stream.eof()) and predicate(self._input_stream.peek()):
-            l.append(self._input_stream.next())
-        return ''.join(l)
+        buffer: List[str] = []
+        while (not self._input_stream.eof()) and\
+                predicate(self._input_stream.peek()):
+            buffer.append(self._input_stream.next())
+        return ''.join(buffer)
 
-    def _read_number(self) -> dict:
+    def _read_number(self) -> Token:
         """
         Integer and float with decimal point are allowed, and scientific notation not allowed.
         :return:
@@ -65,6 +72,7 @@ class TokenStream(object):
         def predicate(ch: str) -> bool:
             nonlocal has_dot
             if ch == '.':
+                # Only one dot is allowed in a number
                 if has_dot:
                     return False
                 has_dot = True
@@ -73,36 +81,34 @@ class TokenStream(object):
 
         has_dot = False
         number = self._read_while(predicate)
-        return {
-            "type": "num",
-            "value": float(number),
-        }
+        return Token("num", float(number))
 
-    def _read_ident(self) -> dict:
-        id = self._read_while(self.is_id)
-        return {
-            'type': 'kw' if self.is_keyword(id) else "var",
-            'value': id,
-        }
+    def _read_identifier(self) -> Token:
+        id = self._read_while(self.is_identifier)
+        return Token(
+            # identifier is either language keyword or variable
+            'kw' if self.is_keyword(id) else "var",
+            id,
+        )
 
-    def _read_string(self) -> dict:
-        escaped = False
-        l = []
+    def _read_string(self) -> Token:
         self._input_stream.next()
+        escaped = False
+        buffer: List[str] = []
         while not self._input_stream.eof():
             ch = self._input_stream.next()
             if escaped:
-                l.append(ch)
+                buffer.append(ch)
                 escaped = False
             elif ch == '\\':
                 escaped = True
             elif ch == '"':
-                return {
-                    'type': 'str',
-                    'value': ''.join(l)
-                }
+                return Token(
+                    'str',
+                    ''.join(buffer)
+                )
             else:
-                l.append(ch)
+                buffer.append(ch)
         self._input_stream.croak("Has no enclosing double quote for string")
 
     def _skip_comment(self) -> None:
@@ -112,14 +118,14 @@ class TokenStream(object):
         self._read_while(predicate)
         self._input_stream.next()
 
-    def _read_next(self) -> dict:
+    def _read_next(self) -> Token:
         """
         read next token
         :return:
         """
         self._read_while(self.is_whitespace)
         if self._input_stream.eof():
-            return {}
+            return NullToken
         ch = self._input_stream.peek()
         if ch == '#':
             self._skip_comment()
@@ -128,39 +134,46 @@ class TokenStream(object):
             return self._read_string()
         if self.is_digit(ch):
             return self._read_number()
-        if self.is_id_start(ch):
-            return self._read_ident()
-        if self.is_punc(ch):
-            return {
-                'type': 'punc',
-                'value': self._input_stream.next()
-            }
-        if self.is_op_char(ch):
-            return {
-                'type': 'op',
-                'value': self._read_while(self.is_op_char)
-            }
+        if self.is_identifier_start(ch):
+            return self._read_identifier()
+        if self.is_punctuation(ch):
+            return Token(
+                'punc',
+                self._input_stream.next()
+            )
+        if self.is_operator(ch):
+            return Token(
+                'op',
+                self._read_while(self.is_operator)
+            )
         self._input_stream.croak(f"Can't handle character: {ch}")
 
-    def peek(self) -> dict:
-        if self.current:
-            return self.current
-        self.current = self._read_next()
+    def peek(self) -> Token:
+        """
+        peek next token
+        """
+        if self.current.type == 'null':
+            self.current = self._read_next()
         return self.current
 
-    def next(self) -> dict:
-        current = self.current
-        self.current = {}
-        if current:
-            return current
-        return self._read_next()
+    def next(self) -> Token:
+        """
+        read next token
+        """
+        current, self.current = self.current, NullToken
+        if current.type == 'null':
+            return self._read_next()
+        return current
 
     def eof(self) -> bool:
-        return self.peek() == {}
+        """
+        end of token stream
+        """
+        return self.peek().type == 'null'
 
-    def croak(self, msg):
+    def croak(self, msg: str):
+        """
+        raise exception with error msg and error location
+        whenever encountered error.
+        """
         self._input_stream.croak(msg)
-#
-#
-# if __name__ == '__main__':
-#     print(list(TokenStream(InputStream('x = "2 +'))))

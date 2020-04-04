@@ -7,9 +7,9 @@ from environment import Environment
 class TestEnvironment(TestCase):
     def test_extend(self):
         environment = Environment()
-        self.assertIsNone(environment._parent)
+        self.assertIsNone(environment.parent)
         subscope = environment.extend()
-        self.assertIs(subscope._parent, environment)
+        self.assertIs(subscope.parent, environment)
 
     def test_define_and_get(self):
         global_scope = Environment()

@@ -1,60 +1,47 @@
 #!/usr/bin/env python
 # encoding: utf-8
+from typing import Any, Dict, Callable
 
 
-def apply_op(op, a, b):
+def apply_op(operator: str, left_operand: Any, right_operand: Any) -> Any:
     """
     Receive operator and operands and apply operator to operands
     We require that the operands for numeric operators be numbers,
     and that a divisor is not zero.
     For operator '&&', if a is not False, return b, otherwise return False.
-    For operator '||', if a is not False, returnt a, otherwise return b.
+    For operator '||', if a is not False, return a, otherwise return b.
     If operator is not legal, raise an exception.t
-    :param op:
-    :param a:
-    :param b:
+    :param operator:
+    :param left_operand:
+    :param right_operand:
     :return:
     """
-    def num(x):
-        if isinstance(x, (int, float)):
-            return x
-        else:
-            raise Exception(f"Expected int or float but got {x}")
 
-    def div(x):
-        if num(x) == 0:
+    def num(operand):
+        if isinstance(operand, (int, float)):
+            return operand
+        raise Exception(f"Expected int or float but got {operand}")
+
+    def div(operand):
+        if num(operand) == 0:
             raise Exception("Divide by zero")
-        return x
+        return operand
 
-    if op == "+":
-        return num(a) + num(b)
-    elif op == "-":
-        return num(a) - num(b)
-    elif op == "*":
-        return num(a) * num(b)
-    elif op == "/":
-        return num(a) / div(b)
-    elif op == "%":
-        return num(a) % div(b)
-    elif op == "&&":
-        if a is not False:
-            return b
-        else:
-            return False
-    elif op == "||":
-        if a is not False:
-            return a
-        return b
-    elif op == "<":
-        return num(a) < num(b)
-    elif op == ">":
-        return num(a) > num(b)
-    elif op == "<=":
-        return num(a) <= num(b)
-    elif op == ">=":
-        return num(a) >= num(b)
-    elif op == "==":
-        return a == b
-    elif op == "!=":
-        return a != b
-    raise Exception(f"Can't apply operator {op}")
+    mapping: Dict[str, Callable[[Any, Any], Any]] = {
+        '+': lambda left, right: num(left) + num(right),
+        '-': lambda left, right: num(left) - num(right),
+        '*': lambda left, right: num(left) * num(right),
+        '/': lambda left, right: num(left) / div(right),
+        '%': lambda left, right: num(left) % div(right),
+        '&&': lambda left, right: False if left is False else right,
+        '||': lambda left, right: right if left is False else left,
+        '<': lambda left, right: num(left) < num(right),
+        '>': lambda left, right: num(left) > num(right),
+        '<=': lambda left, right: num(left) <= num(right),
+        '>=': lambda left, right: num(left) >= num(right),
+        '==': lambda left, right: left == right,
+        '!=': lambda left, right: left != right,
+    }
+    if operator in mapping:
+        return mapping[operator](left_operand, right_operand)
+    raise Exception(f"Can't apply operator {operator}")

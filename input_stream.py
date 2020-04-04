@@ -1,13 +1,20 @@
 #!/usr/bin/env python
 # encoding: utf-8
+"""
+Input Stream
+"""
 
 
-class InputStream(object):
-    def __init__(self, input: str):
-        self._pos = 0
-        self._line = 1
-        self._col = 0
-        self._input = input
+class InputStream:
+    """
+    Input Stream
+    """
+
+    def __init__(self, input_: str):
+        self._pos: int = 0
+        self._line: int = 1
+        self._col: int = 0
+        self._input: str = input_
 
     def next(self) -> str:
         """
@@ -15,18 +22,18 @@ class InputStream(object):
         If there are no more values in the stream, return empty string.
         :return:
         """
+
         try:
-            ch = self._input[self._pos]
+            char = self._input[self._pos]
         except IndexError:
-            ch = ""
-        finally:
-            self._pos += 1
-            if ch == "\n":
-                self._line += 1
-                self._col = 0
-            else:
-                self._col += 1
-            return ch
+            char = ""
+        self._pos += 1
+        if char == "\n":
+            self._line += 1
+            self._col = 0
+        else:
+            self._col += 1
+        return char
 
     def peek(self) -> str:
         """
@@ -46,10 +53,11 @@ class InputStream(object):
         """
         return self.peek() == ""
 
-    def croak(self, msg: str):
+    def croak(self, msg: str) -> None:
         """
-        raise exception with error msg and error location whenever encountered error.
+        raise exception with error msg and error location
+        whenever encountered error.
         :param msg:
         :return:
         """
-        raise Exception(msg + " (" + str(self._line) + ":" + str(self._col) + ")")
+        raise Exception(f"{msg} ({self._line}:{self._col})")

@@ -1,0 +1,17 @@
+fib = lambda(n) if n < 2 then n else fib(n - 1) + fib(n - 2);
+print("fib(10): ");
+time(lambda() println(fib(10)));
+print("fibPY(10): ");
+time(lambda() println(fibPY(10)));
+println("---");
+print("fib(20): ");
+time(lambda() println(fib(20)));
+print("fibPY(20): ");
+time(lambda() println(fibPY(20)));
+println("---");
+print("fib(27): ");
+time(lambda() println(fib(27)));
+print("fibPY(27): ");
+time(lambda() println(fibPY(27)));
+println("---");
+lambda (a) a (1)

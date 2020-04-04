@@ -1,20 +1,23 @@
 #!/usr/bin/env python
 # encoding: utf-8
+from typing import Optional, Any, Dict, TypeVar
+
+T = TypeVar('T')
 
 
-class Environment(object):
-    def __init__(self, parent=None):
-        self._vars = {}
-        self._parent = parent
+class Environment:
+    def __init__(self, parent: Optional['Environment'] = None):
+        self.vars: Dict[str, Any] = {}
+        self.parent = parent
 
-    def extend(self):
+    def extend(self) -> 'Environment':
         """
         create a subscope
         :return:
         """
         return Environment(self)
 
-    def lookup(self, var_name: str):
+    def lookup(self, var_name: str) -> Optional['Environment']:
         """
         Find the scope where the variable with the given name is defined
         If not found, return None.
@@ -22,47 +25,51 @@ class Environment(object):
         :return:
         """
         scope = self
-        while scope:
-            if var_name in scope._vars:
+        while scope is not None:
+            if var_name in scope.vars:
                 return scope
-            scope = scope._parent
+            scope = scope.parent
 
-    def define(self, var_name: str, value: object) -> None:
+    def define(self, var_name: str, value: T) -> T:
         """
         Create a variable in the current scope
         :param var_name:
         :param value:
         :return:
         """
-        self._vars[var_name] = value
+        self.vars[var_name] = value
+        return value
 
-    def get(self, var_name: str) -> object:
+    def get(self, var_name: str) -> Any:
         """
-        Get the current value of a variable. Raise a exception if the variable is not defined
+        Lookup the actual scope where the variable is defined and
+        get the value of a variable in that scope.
+        If variable is not defined, raise a exception.
         :param var_name:
         :return:
         """
-        scope = self
-        while scope:
-            if var_name in scope._vars:
-                return scope._vars[var_name]
-            scope = scope._parent
-        raise Exception(f"Undefined variable {var_name}")
+        environment = self.lookup(var_name)
+        if environment is None:
+            raise Exception(f"Undefined variable {var_name}")
+        return environment.vars[var_name]
 
-    def set(self, var_name: str, value: object) -> None:
+    def set(self, var_name: str, value: Any) -> Any:
         """
-        Lookup the actual scope where the variable is defined and set the value of a variable in that scope.
-        If variable is not defined and current scope is global scope, define variable in global otherwise.
+        Lookup the actual scope where the variable is defined and
+        set the value of a variable in that scope.
+        If variable is not defined and current scope is global scope, define variable in global.
         Otherwise, raise a exception.
-        :param var_name: 
-        :param value: 
-        :return: 
+        :param var_name:
+        :param value:
+        :return:
         """
         scope = self.lookup(var_name)
-        if scope:
-            scope._vars[var_name] = value
-        elif self._parent:
+        if scope is not None:
+            scope.vars[var_name] = value
+        # not global environment
+        elif self.parent is not None:
             raise Exception(f"Undefined variable {var_name}")
         # No parent, so current scope is global scope
         else:
-            self._vars[var_name] = value
+            self.vars[var_name] = value
+        return value

@@ -1,0 +1,52 @@
+cons = lambda(a, b) lambda(f) f(a, b);
+car  = lambda(cell) cell(lambda(a, b) a);
+cdr  = lambda(cell) cell(lambda(a, b) b);
+# NIL本身也是一个cell, 传给car和cdr会返回NIL自身
+NIL  = lambda(f) NIL;
+NIL2 = lambda(f) NIL;
+x = cons(10, 20);
+println(car(x));    # prints 10
+println(cdr(x));    # prints 20
+x = cons(1, cons(2, cons(3, cons(4, cons(5, NIL)))));
+println(car(x));                      # 1
+println(car(cdr(x)));                 # 2  in Lisp this is abbrev. cadr
+println(car(cdr(cdr(x))));            # 3                          caddr
+println(car(cdr(cdr(cdr(x)))));       # 4                          cadddr
+println(car(cdr(cdr(cdr(cdr(x))))));  # 5  but no abbreviation for this one.
+println(cdr(cdr(cdr(cdr(cdr(x)))))); 
+println();
+
+range = lambda(start, stop)
+        if start <= stop then
+            cons(start, range(start + 1, stop))
+        else
+            NIL;
+foreach = lambda(list, f)
+    if list != NIL then
+    {
+        f(car(list));
+        foreach(cdr(list), f);
+    };
+foreach(range(1, 8), λ(x) println(x * x));
+println(NIL == NIL2);
+cons = lambda(x, y)
+    lambda(a, i, v)
+        if a == "get" then
+            if i == 0 then x else y
+        else
+            if i == 0 then x = v else y = v;
+car = lambda(cell) cell("get", 0);
+cdr = lambda(cell) cell("get", 1);
+set-car! = lambda(cell, val) cell("set", 0, val);
+set-cdr! = lambda(cell, val) cell("set", 1, val);
+NIL = cons(0, 0);
+set-car!(NIL, NIL);
+set-cdr!(NIL, NIL);
+
+x = cons(1, 2);
+println(car(x));
+println(cdr(x));
+set-car!(x, 10);
+set-cdr!(x, 20);
+println(car(x));
+println(cdr(x));
