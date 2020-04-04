@@ -1,72 +1,67 @@
 #!/usr/bin/env python
 # encoding: utf-8
-# !/usr/bin/env python
-# encoding: utf-8
 from environment import Environment
 from utils import apply_op
 from itertools import zip_longest
+from parse import Parser
+from token_stream import TokenStream
+from input_stream import InputStream
+from typing import Dict, Callable, Any
+import time
+import inspect
 
-STACKLEN = 0
+Ast = Dict
+
+_StackDepth = 0
 
 
-class Continuation(Exception):
+class _Continuation(Exception):
     def __init__(self, f, args):
-        super(Continuation, self).__init__(f, args)
+        super(_Continuation, self).__init__(f, args)
         self.f = f
         self.args = args
 
 
-def GUARD(f, args):
-    global STACKLEN
-    STACKLEN -= 1
-    if STACKLEN < 0:
-        raise Continuation(f, args)
+def _GUARD(f, args):
+    """
+    mark what function to guard
+    """
+    global _StackDepth
+    _StackDepth -= 1
+    if _StackDepth < 0:
+        raise _Continuation(f, args)
 
 
-def Execute(f, args):
-    global STACKLEN
+def _Execute(f, args):
+    global _StackDepth
     while True:
-        STACKLEN = 200
-        # print(f, args)
+        _StackDepth = 200
         try:
             return f(*args)
-        except Continuation as e:
+        except _Continuation as e:
             f = e.f
             args = e.args
 
 
-def evaluate(ast: dict, env: Environment, callback):
-    GUARD(evaluate, [ast, env, callback])
-    type = ast['type']
-    if type in {'num', 'str', 'bool'}:
+def evaluate(ast: Ast, env: Environment, callback: Callable):
+    _GUARD(evaluate, (ast, env, callback))
+    type_ = ast['type']
+    if type_ in {'num', 'str', 'bool'}:
         callback(ast['value'])
-    elif type == 'var':
+    elif type_ == 'var':
         callback(env.get(ast['value']))
-    elif type == 'assign':
+    elif type_ == 'assign':
         if ast['left']['type'] != 'var':
             raise Exception(f"Cannot assign to {ast['left']}")
-
-        def assign_callback(right):
-            GUARD(assign_callback, [right])
-            callback(env.set(ast['left']['value'], right))
-
-        evaluate(ast['right'], env, assign_callback)
-    elif type == 'binary':
-        def left_callback(left):
-            GUARD(left_callback, [left])
-
-            def right_callback(right):
-                GUARD(right_callback, [right])
-                callback(apply_op(ast['operator'], left, right))
-
-            evaluate(ast['right'], env, right_callback)
-
-        evaluate(ast['left'], env, left_callback)
-    elif type == 'lambda':
+        evaluate(ast['right'], env, lambda right: callback(
+            env.set(ast['left']['value'], right)))
+    elif type_ == 'binary':
+        evaluate(ast['left'], env, lambda left: evaluate(ast['right'], env,
+            lambda right: callback(apply_op(ast['operator'], left, right))))
+    elif type_ == 'lambda':
         callback(make_lambda(env, ast))
-    elif type == 'if':
+    elif type_ == 'if':
         def if_callback(cond):
-            GUARD(if_callback, [cond])
             if cond is not False:
                 evaluate(ast['then'], env, callback)
             elif 'else' in ast:
@@ -75,15 +70,13 @@ def evaluate(ast: dict, env: Environment, callback):
                 callback(False)
 
         evaluate(ast['cond'], env, if_callback)
-    elif type == 'let':
+    elif type_ == 'let':
         def loop(env, i):
-            GUARD(loop, [env, i])
             if i < len(ast['vars']):
                 var = ast['vars'][i]
                 scope = env.extend()
                 if var['def']:
                     def define_callback(value):
-                        GUARD(define_callback, [value])
                         scope.define(var['name'], value)
                         loop(scope, i + 1)
 
@@ -95,29 +88,18 @@ def evaluate(ast: dict, env: Environment, callback):
                 evaluate(ast['body'], env, callback)
 
         loop(env, 0)
-    elif type == 'prog':
+    elif type_ == 'prog':
         def loop(last, i):
-            GUARD(loop, [last, i])
             if i < len(ast['prog']):
-                def expression_callback(value):
-                    GUARD(expression_callback, [value])
-                    loop(value, i + 1)
-
-                evaluate(ast['prog'][i], env, expression_callback)
+                evaluate(ast['prog'][i], env, lambda value: loop(value, i + 1))
             else:
                 callback(last)
 
         loop(False, 0)
-    elif type == 'call':
+    elif type_ == 'call':
         def call_callback(func):
-            GUARD(call_callback, [func])
-
             def loop(args, i):
-                # print(f"call loop: {args} {i}")
-                GUARD(loop, [args, i])
-
                 def arg_callback(arg):
-                    GUARD(arg_callback, [arg])
                     args.append(arg)
                     loop(args, i + 1)
 
@@ -130,57 +112,60 @@ def evaluate(ast: dict, env: Environment, callback):
 
         evaluate(ast['func'], env, call_callback)
     else:
-        raise Exception("I don'tt know how to evaluate " + ast['type'])
+        raise Exception(f"I don'tt know how to evaluate {ast['type']}")
 
 
-def make_lambda(env, exp):
+def make_lambda(env: Environment, ast: Ast) -> Callable:
     def lambda_function(callback, *args):
-        GUARD(lambda_function, [callback, *args])
-        scope = env.extend()
-        names = exp['vars']
+        names = ast['vars']
         assert len(names) >= len(args)
+        scope = env.extend()
         for name, value in zip_longest(names, args, fillvalue=False):
             scope.define(name, value)
-        evaluate(exp['body'], scope, callback)
+        evaluate(ast['body'], scope, callback)
 
-    if exp['name']:
+    if ast['name']:
         env = env.extend()
-        env.define(exp['name'], lambda_function)
+        env.define(ast['name'], lambda_function)
     return lambda_function
 
 
-# if __name__ == '__main__':
-#     from input_stream import InputStream
-#     from token_stream import TokenStream
-#     from parse import Parser
-#     from environment import Environment
-#
-#
-#     def println(callback, txt):
-#         print(txt)
-#         callback(False)
-#
-#
-#     def time(callback, fn):
-#         from datetime import datetime
-#         t1 = datetime.now()
-#
-#         def time_callback(value):
-#             t2 = datetime.now()
-#             print(f"Time: {t2 - t1} seconds")
-#             print(callback)
-#             callback(value)
-#
-#         fn(time_callback)
-#
-#
-#     globalEnv = Environment()
-#     globalEnv.define('time', time)
-#     globalEnv.define('println', println)
-#     code = "fibJS = lambda (n) if n < 2 then n else fibJS(n - 1) + fibJS(n - 2);fibJS(20)"
-#     code = "fib = λ(n) if n < 2 then n else fib(n - 1) + fib(n - 2); time( λ() println(fib(20)) );"
-#     code = """sum = λ(n, ret) if n == 0 then ret else sum(n - 1, ret + n);
-#     # compute 1 + 2 + ... + 50000
-#     time( λ() println(sum(50000, 0)) );"""
-#     ast = Parser(TokenStream(InputStream(code)))()
-#     Execute(evaluate, [ast, globalEnv, lambda result: print(f"*** Result: {result}")])
+def main():
+    code = "sum = lambda(x, y) x + y; print(sum(2, 3));"
+    code = """
+    fib = λ(n) if n < 2 then n else fib(n - 1) + fib(n - 2);
+    time( λ() println(fib(25)) );
+    """
+    code = """
+    sum = lambda(n, ret)
+            if n == 0 then ret
+                    else sum(n - 1, ret + n);
+    time(lambda() println(sum(50000, 0)));
+    """
+    parser = Parser(TokenStream(InputStream(code)))
+    global_env = Environment()
+
+    def custom_print(callback, txt):
+        print(txt, end=' ')
+        callback(False)
+
+    def custom_println(callback, txt):
+        print(txt, end='\n')
+        callback(False)
+
+    def timing(callback, func):
+        start_time = time.time()
+
+        def timing_callback(result):
+            end_time = time.time()
+            print(f"Time: {(end_time - start_time) * 1000}ms", end='\n')
+            callback(result)
+        func(timing_callback)
+    global_env.define("print", custom_print)
+    global_env.define("time", timing)
+    global_env.define("println", custom_println)
+    _Execute(evaluate, (parser(), global_env, lambda result: print(f"*** Result: {result}")))
+
+
+if __name__ == "__main__":
+    main()

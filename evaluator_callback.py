@@ -12,7 +12,7 @@ import time
 Ast = Dict
 
 
-def evaluate(ast: Ast, env: Environment, callback) -> None:
+def evaluate(ast: Ast, env: Environment, callback: Callable):
     type_ = ast['type']
     if type_ in {'num', 'str', 'bool'}:
         callback(ast['value'])
@@ -24,8 +24,8 @@ def evaluate(ast: Ast, env: Environment, callback) -> None:
         evaluate(ast['right'], env, lambda right: callback(
             env.set(ast['left']['value'], right)))
     elif type_ == 'binary':
-        evaluate(ast['left'], env, lambda left: evaluate(ast['right'], env, lambda right: callback(
-            apply_op(ast['operator'], left, right))))
+        evaluate(ast['left'], env, lambda left: evaluate(ast['right'], env,
+            lambda right: callback(apply_op(ast['operator'], left, right))))
     elif type_ == 'lambda':
         callback(make_lambda(env, ast))
     elif type_ == 'if':
@@ -102,8 +102,9 @@ def main():
     # code = "sum = lambda(x, y) x + y; print(sum(2, 3));"
     code = """
     fib = λ(n) if n < 2 then n else fib(n - 1) + fib(n - 2);
-    time( λ() println(fib(6)) );
+    time( λ() println(fib(12)) );
     """
+    # code = "print(1 + 2 * 3)"
     # code = """
     # fib = λ(n) if n < 2 then n else fib(n - 1) + fib(n - 2);
     # println(fib(8));
