@@ -72,15 +72,16 @@ def evaluate(ast: Ast, env: Environment, callback: Callable):
         def call_callback(func):
             def loop(args, i):
                 def arg_callback(arg):
-                    args.append(arg)
+                    args[i + 1] = arg
                     loop(args, i + 1)
 
                 if i < len(ast['args']):
                     evaluate(ast['args'][i], env, arg_callback)
                 else:
                     func(*args)
-
-            loop([callback], 0)
+            args = [None] * (len(ast['args']) + 1)
+            args[0] = callback
+            loop(args, 0)
 
         evaluate(ast['func'], env, call_callback)
     else:

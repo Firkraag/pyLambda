@@ -3,6 +3,10 @@
 from unittest import TestCase
 from evaluator_callback import evaluate
 from environment import Environment
+from parse import Parser
+from token_stream import TokenStream
+from input_stream import InputStream
+from callback_primitive import primitive
 
 
 class TestEvaluate(TestCase):
@@ -278,3 +282,19 @@ class TestEvaluate(TestCase):
             ast,
             Environment(),
             lambda value: self.assertEqual(value, 8.0))
+        ast = {
+            "type": "if",
+            "cond": {"type": "bool", "value": False},
+            "then": {"type": "num", "value": 1}}
+        evaluate(ast, Environment(), lambda value: self.assertFalse(value))
+        code = """
+        2 + twice(3, 4)
+        """
+        global_env = Environment()
+        for name, func in primitive.items():
+            global_env.define(name, func)
+        parser = Parser(TokenStream(InputStream(code)))
+        evaluate(
+            parser(),
+            global_env,
+            lambda result: result)
