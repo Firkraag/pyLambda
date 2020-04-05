@@ -11,6 +11,7 @@ from input_stream import InputStream
 from parse import Parser
 from token_stream import TokenStream
 from utils import apply_op
+from primitive import primitive
 
 
 def evaluate(ast: Dict, env: Environment) -> Any:
@@ -105,27 +106,8 @@ def make_lambda(env: Environment, ast: dict) -> Callable:
 
 def main():
     global_env = Environment()
-    global_env.define("print", partial(print, end=' '))
-    global_env.define("println", partial(print, end='\n'))
-
-    def fib_py(number):
-        if number < 2:
-            return number
-        return fib_py(number - 1) + fib_py(number - 2)
-
-    global_env.define('fibPY', fib_py)
-
-    def timing(func: Callable[[], Any]):
-        start_time = time.time()
-        result = func()
-        end_time = time.time()
-        print(f"Time: {(end_time - start_time) * 1000}ms", end='\n')
-        return result
-
-    def halt():
-        pass
-    global_env.define("time", timing)
-    global_env.define("halt", halt)
+    for name, func in primitive.items():
+        global_env.define(name, func)
     lambda_file_path = sys.argv[1]
     with open(lambda_file_path) as file:
         code = file.read()

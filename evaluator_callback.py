@@ -8,6 +8,7 @@ from token_stream import TokenStream
 from input_stream import InputStream
 from typing import Dict, Callable, Any
 import time
+from callback_primitive import primitive
 
 Ast = Dict
 
@@ -114,26 +115,8 @@ def main():
     # """
     parser = Parser(TokenStream(InputStream(code)))
     global_env = Environment()
-
-    def custom_print(callback, txt):
-        print(txt, end=' ')
-        callback(False)
-
-    def custom_println(callback, txt):
-        print(txt, end='\n')
-        callback(False)
-
-    def timing(callback, func):
-        start_time = time.time()
-
-        def timing_callback(result):
-            end_time = time.time()
-            print(f"Time: {(end_time - start_time) * 1000}ms", end='\n')
-            callback(result)
-        func(timing_callback)
-    global_env.define("print", custom_print)
-    global_env.define("time", timing)
-    global_env.define("println", custom_println)
+    for name, func in primitive.items():
+        global_env.define(name, func)
     evaluate(parser(), global_env, lambda result: result)
 
 
