@@ -99,7 +99,8 @@ class TestTokenStream(TestCase):
         self.assertEqual(token_stream._input_stream.peek(), 'd')
 
     def test_read_next(self):
-        token_stream = TokenStream(InputStream(' # comment\n123 abc "nba" let a=2  >=;'))
+        token_stream = TokenStream(
+            InputStream(' # comment\n123 abc "nba" let a=2  >=;'))
         self.assertEqual(token_stream._read_next(), Token('num', 123.0))
         self.assertEqual(token_stream._read_next(), Token('var', 'abc'))
         self.assertEqual(token_stream._read_next(), Token('str', 'nba'))
@@ -116,12 +117,14 @@ class TestTokenStream(TestCase):
         self.assertEqual(token_stream._read_next(), Token("kw", 'λ'))
 
     def test_peek_and_next(self):
-        token_stream = TokenStream(InputStream(' # comment\n123 abc let a=2  >=;'))
+        token_stream = TokenStream(
+            InputStream(' # comment\n123 abc let a=2  >=;'))
         self.assertEqual(token_stream.peek(), Token('num', 123.0))
         self.assertEqual(token_stream.peek(), Token('num', 123.0))
         self.assertEqual(token_stream.next(), Token('num', 123.0))
 
-        token_stream = TokenStream(InputStream(' # comment\n123 abc let a=2  >=;'))
+        token_stream = TokenStream(
+            InputStream(' # comment\n123 abc let a=2  >=;'))
         self.assertEqual(token_stream.next(), Token('num', 123.0))
         self.assertEqual(token_stream.next(), Token('var', 'abc'))
         self.assertEqual(token_stream.next(), Token('kw', 'let'))
