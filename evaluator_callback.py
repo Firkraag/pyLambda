@@ -24,8 +24,11 @@ def evaluate(ast: Ast, env: Environment, callback: Callable):
         evaluate(ast['right'], env, lambda right: callback(
             env.set(ast['left']['value'], right)))
     elif type_ == 'binary':
-        evaluate(ast['left'], env, lambda left: evaluate(ast['right'], env,
-            lambda right: callback(apply_op(ast['operator'], left, right))))
+        def left_callback(left):
+            def right_callback(right):
+                callback(apply_op(ast['operator'], left, right))
+            evaluate(ast['right'], env, right_callback)
+        evaluate(ast['left'], env, left_callback)
     elif type_ == 'lambda':
         callback(make_lambda(env, ast))
     elif type_ == 'if':

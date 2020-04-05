@@ -65,7 +65,8 @@ class TokenStream:
 
     def _read_number(self) -> Token:
         """
-        Integer and float with decimal point are allowed, and scientific notation not allowed.
+        Integer and float with decimal point are allowed,
+        and scientific notation not allowed.
         :return:
         """
 

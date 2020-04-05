@@ -9,7 +9,8 @@ from input_stream import InputStream
 from typing import Dict, Callable, Any
 import time
 import inspect
-
+from callback_primitive import primitive
+import sys
 Ast = Dict
 
 _StackDepth = 0
@@ -56,8 +57,11 @@ def evaluate(ast: Ast, env: Environment, callback: Callable):
         evaluate(ast['right'], env, lambda right: callback(
             env.set(ast['left']['value'], right)))
     elif type_ == 'binary':
-        evaluate(ast['left'], env, lambda left: evaluate(ast['right'], env,
-            lambda right: callback(apply_op(ast['operator'], left, right))))
+        def left_callback(left):
+            def right_callback(right):
+                callback(apply_op(ast['operator'], left, right))
+            evaluate(ast['right'], env, right_callback)
+        evaluate(ast['left'], env, left_callback)
     elif type_ == 'lambda':
         callback(make_lambda(env, ast))
     elif type_ == 'if':
@@ -142,29 +146,22 @@ def main():
                     else sum(n - 1, ret + n);
     time(lambda() println(sum(50000, 0)));
     """
-    parser = Parser(TokenStream(InputStream(code)))
+    code = """
+    println("foo");
+    halt();
+    println("bar");
+    """
     global_env = Environment()
 
-    def custom_print(callback, txt):
-        print(txt, end=' ')
-        callback(False)
-
-    def custom_println(callback, txt):
-        print(txt, end='\n')
-        callback(False)
-
-    def timing(callback, func):
-        start_time = time.time()
-
-        def timing_callback(result):
-            end_time = time.time()
-            print(f"Time: {(end_time - start_time) * 1000}ms", end='\n')
-            callback(result)
-        func(timing_callback)
-    global_env.define("print", custom_print)
-    global_env.define("time", timing)
-    global_env.define("println", custom_println)
-    _Execute(evaluate, (parser(), global_env, lambda result: print(f"*** Result: {result}")))
+    for name, func in primitive.items():
+        global_env.define(name, func)
+    with open(sys.argv[1]) as file:
+        code = file.read()
+        parser = Parser(TokenStream(InputStream(code)))
+        _Execute(evaluate,
+                 (parser(),
+                  global_env,
+                  lambda result: print(f"*** Result: {result}")))
 
 
 if __name__ == "__main__":

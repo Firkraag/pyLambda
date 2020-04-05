@@ -57,8 +57,8 @@ class Environment:
         """
         Lookup the actual scope where the variable is defined and
         set the value of a variable in that scope.
-        If variable is not defined and current scope is global scope, define variable in global.
-        Otherwise, raise a exception.
+        If variable is not defined and current scope is global scope,
+        define variable in global. Otherwise, raise a exception.
         :param var_name:
         :param value:
         :return:

@@ -51,7 +51,8 @@ class Parser:
         token = self._token_stream.peek()
         return token == Token('op', char)
 
-    def _delimited(self, start: str, stop: str, separator: str, parser: Callable[[], T]) -> List[T]:
+    def _delimited(self, start: str, stop: str, separator: str,
+                   parser: Callable[[], T]) -> List[T]:
         """
         :param start:
         :param stop:
@@ -117,8 +118,8 @@ class Parser:
         """
         Parse expression of the form like 'var [= expression]'
         If var is followed by an expression, the value of key 'def'
-        is the ast returned by parse_expression, otherwise the value of key 'def'
-        is None.
+        is the ast returned by parse_expression,
+        otherwise the value of key 'def' is None.
         :return:
         """
         name = self._parse_varname()
@@ -167,7 +168,8 @@ class Parser:
 
     def _parse_atom(self) -> AST:
         """
-        parse_atom does the main dispatching job, depending on the current token
+        parse_atom does the main dispatching job,
+        depending on the current token
         :return:
         """
 
@@ -222,7 +224,8 @@ class Parser:
 
     def _parse_expression(self) -> AST:
         """
-        expression is a form like atom1(args1) op1 atom2(args2) op2 atom3(args3)(args)
+        expression is a form like
+        atom1(args1) op1 atom2(args2) op2 atom3(args3)(args)
         :return:
         """
 
@@ -246,9 +249,10 @@ class Parser:
 
     def _maybe_call(self, parser: Callable[[], AST]) -> AST:
         """
-        This function receive a function that is expected to parse the current expression.
-        If after that expression it sees a ( punctuation token, then it must be a "call" node,
-        which is what parse_call() makes.
+        This function receive a function that is expected to
+        parse the current expression.
+        If after that expression it sees a ( punctuation token,
+        then it must be a "call" node, which is what parse_call() makes.
         :param parser:
         :return:
         """
@@ -257,8 +261,10 @@ class Parser:
 
     def _maybe_binary(self, left: AST, my_prec: int) -> AST:
         """
-        maybe_binary(left, my_prec) is used to compose binary expressions like 1 + 2 * 3.
-        if operator is =, then ast type is assign, otherwise, ast type is binary
+        maybe_binary(left, my_prec) is used to compose
+        binary expressions like 1 + 2 * 3.
+        if operator is =, then ast type is assign,
+        otherwise, ast type is binary
         :param left:
         :param my_prec:
         :return:

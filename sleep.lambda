@@ -1,0 +1,8 @@
+let loop(n = 0) {
+    if n < 10 {
+        println(n);
+        sleep(0.25);
+        loop(n + 1);
+    }
+};
+println("And we're done");

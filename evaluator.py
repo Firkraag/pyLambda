@@ -122,7 +122,10 @@ def main():
         print(f"Time: {(end_time - start_time) * 1000}ms", end='\n')
         return result
 
+    def halt():
+        pass
     global_env.define("time", timing)
+    global_env.define("halt", halt)
     lambda_file_path = sys.argv[1]
     with open(lambda_file_path) as file:
         code = file.read()
