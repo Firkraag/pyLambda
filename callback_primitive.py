@@ -39,6 +39,15 @@ def _twice(callback: Callable[[Any], Any], a, b):
     callback(b)
 
 
+def _call_cc(callback: Callable, func: Callable):
+    func(callback, lambda discard, ret: callback(ret))
+
+
+# def _with_yield(callback: Callable, yield_func: Callable):
+#     yield_func(callback, lambda cb, ret: callback(ret), )
+#     func(callback, lambda discard, ret: callback(ret))
+
+
 primitive = {
     'sleep': _sleep,
     'print': _custom_print,
@@ -46,4 +55,5 @@ primitive = {
     'time': _timing,
     'halt': _halt,
     'twice': _twice,
+    'CallCC': _call_cc,
 }

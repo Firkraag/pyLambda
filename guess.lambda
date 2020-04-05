@@ -1,0 +1,32 @@
+fail = lambda() false;
+guess = lambda(current) {
+    CallCC(lambda(return) {
+        let (prevFail = fail) {
+            fail = lambda() {
+                current = current + 1;
+                if current > 100 {
+                    fail = prevFail;
+                    fail();
+                }
+                else {
+                    return(current);
+                };
+            };
+            return(current);
+        };
+    });
+};
+
+a = guess(1);
+print("a = ");
+println(a);
+b = guess(a);
+print("b = ");
+println(b);
+println("----");
+if a * b == 84 {
+    print(a);
+    print(" x ");
+    println(b);
+};
+fail();

@@ -1,0 +1,7 @@
+foo = lambda(return) {
+    println("foo");
+    return("Done");
+    println("bar");
+
+};
+CallCC(foo);
