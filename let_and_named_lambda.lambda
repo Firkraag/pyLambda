@@ -1,5 +1,6 @@
 println(let loop (n = 10)
         if n > 0 then n + loop(n - 1) else 0);
+#println(loop);
 println((lambda loop(n)
         if n > 0 then n + loop(n - 1) else 0
         )(10));
@@ -26,4 +27,4 @@ let (x = 1, y = x)
     println(y);
 };
 println(x);
-let (x=2, y = 3, z = x + y) println(x + y + z)
+let (x = 2, y = 3, z = x + y) println(x + y + z)
