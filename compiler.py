@@ -89,7 +89,7 @@ def _js_let(ast: Ast):
 
 
 def _js_if(ast: Ast):
-    cond_code = js(ast['code'])
+    cond_code = js(ast['cond'])
     then_code = js(ast['then'])
     else_code = js(ast['else']) if 'else' in ast else 'false'
     return f'({cond_code} != false ? {then_code} : {else_code})'
