@@ -1,0 +1,9 @@
+lambda loop(n) {
+    if n < 1 {
+        n;
+    }
+    else {
+        loop(n - 1);
+    }
+};
+println(loop)
