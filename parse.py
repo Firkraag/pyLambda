@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 # encoding: utf-8
-from typing import Dict, Callable, List, TypeVar
+from typing import Callable, List, TypeVar, Union
 
+from ast import Ast, LiteralAst, VarAst, VarDefAst, LambdaAst, LetAst, \
+    CallAst, ProgAst, IfAst, BinaryAst, AssignAst
 from token_stream import TokenStream, Token
 
-AST = Dict
 T = TypeVar('T')  # Can be anything
 
 
@@ -76,17 +77,17 @@ class Parser:
         self._skip_punc(stop)
         return ast_list
 
-    def _parse_lambda(self, keyword: str) -> AST:
+    def _parse_lambda(self, keyword: str) -> LambdaAst:
         self._skip_kw(keyword)
-        return {
-            'type': 'lambda',
-            'name': self._token_stream.next().value
-                    if self._token_stream.peek().type == 'var' else '',
-            'vars': self._delimited("(", ")", ",", self._parse_varname),
-            'body': self._parse_expression(),
-        }
+        if self._token_stream.peek().type == 'var':
+            name = self._token_stream.next().value
+        else:
+            name = ''
+        params = self._delimited("(", ")", ",", self._parse_varname)
+        body = self._parse_expression()
+        return LambdaAst(name, params, body)
 
-    def _parse_let(self) -> AST:
+    def _parse_let(self) -> Union[CallAst, LetAst]:
         """
         When it is a named let, if an arg is not followed by some expression,
         then a false value is assigned to the arg by the parser.
@@ -95,26 +96,21 @@ class Parser:
         self._skip_kw('let')
         if self._token_stream.peek().type == 'var':
             name = self._token_stream.next().value
-            defs = self._delimited('(', ')', ',', self._parse_vardef)
-            return {
-                'type': 'call',
-                'func': {
-                    'type': 'lambda',
-                    'name': name,
-                    'vars': [define['name'] for define in defs],
-                    'body': self._parse_expression(),
-                },
-                'args': list(
-                    map(lambda define: define['def'] if define['def'] else
-                        {"type": "bool", "value": False}, defs))
-            }
-        return {
-            'type': 'let',
-            'vars': self._delimited('(', ')', ',', self._parse_vardef),
-            'body': self._parse_expression(),
-        }
+            vardefs = self._delimited('(', ')', ',', self._parse_vardef)
+            varnames = [vardef.name for vardef in vardefs]
+            defines = [vardef.define if vardef.define else LiteralAst(False)
+                       for vardef in vardefs]
+            return CallAst(
+                LambdaAst(
+                    name,
+                    varnames,
+                    self._parse_expression()),
+                defines)
+        vardefs = self._delimited('(', ')', ',', self._parse_vardef)
+        body = self._parse_expression()
+        return LetAst(vardefs, body)
 
-    def _parse_vardef(self) -> AST:
+    def _parse_vardef(self) -> VarDefAst:
         """
         Parse expression of the form like 'var [= expression]'
         If var is followed by an expression, the value of key 'def'
@@ -127,7 +123,7 @@ class Parser:
         if self._is_op('='):
             self._token_stream.next()
             define = self._parse_expression()
-        return {'name': name, 'def': define}
+        return VarDefAst(name, define)
 
     def _parse_varname(self) -> str:
         """
@@ -138,42 +134,34 @@ class Parser:
             return token.value
         self._token_stream.croak('Expecting variable name')
 
-    def _parse_toplevel(self) -> AST:
+    def _parse_toplevel(self) -> ProgAst:
         prog = []
         while not self._token_stream.eof():
             prog.append(self._parse_expression())
             if not self._token_stream.eof():
                 self._skip_punc(";")
-        return {
-            'type': 'prog',
-            'prog': prog,
-        }
+        return ProgAst(prog)
 
-    def _parse_if(self) -> AST:
+    def _parse_if(self) -> IfAst:
         self._skip_kw("if")
         cond = self._parse_expression()
         if not self._is_punc('{'):
             self._skip_kw('then')
         then = self._parse_expression()
-        ret = {
-            'type': 'if',
-            'cond': cond,
-            'then': then,
-        }
-        # print(self._token_stream.peek())
+        else_ = None
         if self._is_kw('else'):
             self._skip_kw('else')
-            ret['else'] = self._parse_expression()
-        return ret
+            else_ = self._parse_expression()
+        return IfAst(cond, then, else_)
 
-    def _parse_atom(self) -> AST:
+    def _parse_atom(self) -> Ast:
         """
         parse_atom does the main dispatching job,
         depending on the current token
         :return:
         """
 
-        def parser() -> AST:
+        def parser() -> Ast:
             if self._is_punc('('):
                 self._skip_punc('(')
                 exp = self._parse_expression()
@@ -192,13 +180,15 @@ class Parser:
             if self._is_kw('λ'):
                 return self._parse_lambda('λ')
             token = self._token_stream.next()
-            if token.type in {'var', 'num', 'str'}:
-                return token._asdict()
+            if token.type == 'str' or token.type == 'num':
+                return LiteralAst(token.value)
+            if token.type == 'var':
+                return VarAst(token.value)
             self.unexpected()
 
         return self._maybe_call(parser)
 
-    def _parse_prog(self) -> AST:
+    def _parse_prog(self) -> ProgAst:
         """
         If the prog is empty, then it just returns FALSE.
         If it has a single expression, it is returned instead of a "prog" node.
@@ -206,48 +196,41 @@ class Parser:
         :return:
         """
         prog = self._delimited("{", "}", ";", self._parse_expression)
-        if len(prog) == 0:
-            return {
-                'type': 'bool', 'value': False,
-            }
-        if len(prog) == 1:
-            return prog[0]
-        return {'type': 'prog', 'prog': prog}
+        # if len(prog) == 0:
+        #     return LiteralAst(False)
+        # if len(prog) == 1:
+        #     return prog[0]
+        return ProgAst(prog)
 
-    def _parse_bool(self) -> AST:
+    def _parse_bool(self) -> LiteralAst:
         token = self._token_stream.next()
         assert token.type == 'kw'
-        return {
-            'type': 'bool',
-            'value': token.value == 'true',
-        }
+        return LiteralAst(token.value == 'true')
 
-    def _parse_expression(self) -> AST:
+    def _parse_expression(self) -> Ast:
         """
         expression is a form like
         atom1(args1) op1 atom2(args2) op2 atom3(args3)(args)
         :return:
         """
 
-        def parser() -> AST:
+        def parser() -> Ast:
             return self._maybe_binary(self._parse_atom(), 0)
 
         return self._maybe_call(parser)
 
-    def _parse_call(self, func_name: AST) -> AST:
+    def _parse_call(self, func: Ast) -> CallAst:
         """
         func_name is parsed by callee before calling parse_call,
         so parse_call only need to parse func args
-        :param func_name:
+        :param func:
         :return:
         """
-        return {
-            'type': 'call',
-            'func': func_name,
-            'args': self._delimited('(', ')', ',', self._parse_expression)
-        }
+        return CallAst(
+            func,
+            self._delimited('(', ')', ',', self._parse_expression))
 
-    def _maybe_call(self, parser: Callable[[], AST]) -> AST:
+    def _maybe_call(self, parser: Callable[[], Ast]) -> Ast:
         """
         This function receive a function that is expected to
         parse the current expression.
@@ -259,7 +242,7 @@ class Parser:
         expr = parser()
         return self._parse_call(expr) if self._is_punc("(") else expr
 
-    def _maybe_binary(self, left: AST, my_prec: int) -> AST:
+    def _maybe_binary(self, left: Ast, my_prec: int) -> Ast:
         """
         maybe_binary(left, my_prec) is used to compose
         binary expressions like 1 + 2 * 3.
@@ -276,16 +259,14 @@ class Parser:
         if his_prec > my_prec:
             self._token_stream.next()
             right = self._maybe_binary(self._parse_atom(), his_prec)
-            binary = {
-                'type': 'assign' if token.value == '=' else 'binary',
-                'operator': token.value,
-                'left': left,
-                'right': right
-            }
+            if token.value == '=':
+                binary = AssignAst(left, right)
+            else:
+                binary = BinaryAst(token.value, left, right)
             return self._maybe_binary(binary, my_prec)
         return left
 
-    def __call__(self):
+    def __call__(self) -> ProgAst:
         return self._parse_toplevel()
 
     def unexpected(self):

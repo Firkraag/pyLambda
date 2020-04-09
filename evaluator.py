@@ -6,6 +6,8 @@ from itertools import zip_longest
 from typing import Any, Dict, Callable
 import sys
 
+from ast import Ast, LiteralAst, VarAst, AssignAst, BinaryAst, LambdaAst,\
+                IfAst, ProgAst, CallAst, LetAst
 from environment import Environment
 from input_stream import InputStream
 from parse import Parser
@@ -14,7 +16,7 @@ from utils import apply_op
 from primitive import primitive
 
 
-def evaluate(ast: Dict, env: Environment) -> Any:
+def evaluate(ast: Ast, env: Environment) -> Any:
     """
     For num, str, bool nodes, return their value;
     variable are fetched from the environment;
@@ -46,60 +48,60 @@ def evaluate(ast: Dict, env: Environment) -> Any:
     :param env:
     :return:
     """
-    type_ = ast['type']
-    if type_ in {'num', 'str', 'bool'}:
-        return ast['value']
-    if type_ == 'var':
-        return env.get(ast['value'])
-    if type_ == 'assign':
-        left = ast['left']
-        if left['type'] != 'var':
-            raise Exception(f"Cannot assign to {ast['left']}")
-        return env.set(left['value'], evaluate(ast['right'], env))
-    if type_ == 'binary':
-        return apply_op(ast['operator'], evaluate(ast['left'], env),
-                        evaluate(ast['right'], env))
-    if type_ == 'lambda':
+
+    if isinstance(ast, LiteralAst):
+        return ast.value
+    if isinstance(ast, VarAst):
+        return env.get(ast.name)
+    if isinstance(ast, AssignAst):
+        left = ast.left
+        if not isinstance(left, VarAst):
+            raise Exception(f"Cannot assign to {ast.left}")
+        return env.set(left.name, evaluate(ast.right, env))
+    if isinstance(ast, BinaryAst):
+        return apply_op(ast.operator, evaluate(ast.left, env),
+                        evaluate(ast.right, env))
+    if isinstance(ast, LambdaAst):
         return make_lambda(env, ast)
-    if type_ == 'if':
-        cond = evaluate(ast['cond'], env)
+    if isinstance(ast, IfAst):
+        cond = evaluate(ast.cond, env)
         if cond is not False:
-            return evaluate(ast['then'], env)
-        if 'else' in ast:
-            return evaluate(ast['else'], env)
+            return evaluate(ast.then, env)
+        if ast.else_:
+            return evaluate(ast.else_, env)
         return False
-    if type_ == 'prog':
+    if isinstance(ast, ProgAst):
         result = False
-        for expr in ast['prog']:
+        for expr in ast.prog:
             result = evaluate(expr, env)
         return result
-    if type_ == 'call':
-        func = evaluate(ast['func'], env)
-        return func(*[evaluate(arg, env) for arg in ast['args']])
-    if type_ == 'let':
-        for var in ast['vars']:
+    if isinstance(ast, CallAst):
+        func = evaluate(ast.func, env)
+        return func(*[evaluate(arg, env) for arg in ast.args])
+    if isinstance(ast, LetAst):
+        for var in ast.vardefs:
             scope = env.extend()
             # if an arg is not assigned some value,
             # then False is assigned to the arg by the evaluator.
-            scope.define(var['name'],
-                         evaluate(var['def'], env) if var['def'] else False)
+            scope.define(var.name,
+                         evaluate(var.define, env) if var.define else False)
             env = scope
-        return evaluate(ast['body'], env)
-    raise Exception(f"I don't know how to evaluate {ast['type']}")
+        return evaluate(ast.body, env)
+    raise Exception(f"I don't know how to evaluate {ast}")
 
 
-def make_lambda(env: Environment, ast: dict) -> Callable:
+def make_lambda(env: Environment, ast: LambdaAst) -> Callable:
     def lambda_function(*args):
-        names = ast['vars']
+        names = ast.params
         assert len(names) >= len(args)
         scope = env.extend()
         for name, value in zip_longest(names, args, fillvalue=False):
             scope.define(name, value)
-        return evaluate(ast['body'], scope)
+        return evaluate(ast.body, scope)
 
-    if ast['name']:
+    if ast.name:
         env = env.extend()
-        env.define(ast['name'], lambda_function)
+        env.define(ast.name, lambda_function)
 
     return lambda_function
 
@@ -111,8 +113,8 @@ def main():
     lambda_file_path = sys.argv[1]
     with open(lambda_file_path) as file:
         code = file.read()
-        parser = Parser(TokenStream(InputStream(code)))
-        evaluate(parser(), global_env)
+    parser = Parser(TokenStream(InputStream(code)))
+    evaluate(parser(), global_env)
 
 
 if __name__ == '__main__':
