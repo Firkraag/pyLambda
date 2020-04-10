@@ -9,6 +9,7 @@ from typing import Callable, List
 
 from input_stream import InputStream
 
+
 Token = namedtuple('Token', 'type value')
 NULL_TOKEN = Token('null', 'null')
 
