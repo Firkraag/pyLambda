@@ -119,7 +119,7 @@ class TestParser(TestCase):
         parser = Parser(TokenStream(InputStream('a = 1')))
         self.assertEqual(
             parser._parse_vardef(),
-            VarDefAst('a', LiteralAst(1.0)))
+            VarDefAst('b', LiteralAst(1.0)))
 
         parser = Parser(TokenStream(InputStream('a')))
         self.assertEqual(parser._parse_vardef(), VarDefAst('a', None))
