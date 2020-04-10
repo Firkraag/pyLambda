@@ -1,15 +1,21 @@
 #!/usr/bin/env python
 # encoding: utf-8
+"""
+parse token_stream into ast
+"""
 from typing import Callable, List, TypeVar, Union
 
 from ast import Ast, LiteralAst, VarAst, VarDefAst, LambdaAst, LetAst, \
     CallAst, ProgAst, IfAst, BinaryAst, AssignAst
 from token_stream import TokenStream, Token
 
-T = TypeVar('T')  # Can be anything
+Type = TypeVar('T')  # Can be anything
 
 
 class Parser:
+    """
+    parse token stream into ast
+    """
     PRECEDENCE = {
         "=": 1,
         "||": 2,
@@ -53,7 +59,7 @@ class Parser:
         return token == Token('op', char)
 
     def _delimited(self, start: str, stop: str, separator: str,
-                   parser: Callable[[], T]) -> List[T]:
+                   parser: Callable[[], Type]) -> List[Type]:
         """
         :param start:
         :param stop:
@@ -270,5 +276,9 @@ class Parser:
         return self._parse_toplevel()
 
     def unexpected(self):
+        """
+        raise exception with error msg and error location
+        whenever encountered error.
+        """
         self._token_stream.croak(
             f'Unexpected token: {self._token_stream.peek()}')
