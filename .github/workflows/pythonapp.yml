@@ -30,6 +30,7 @@ jobs:
         for file in **/*.py; do
           pylint "$file"
           exit_code=$(( $? % 4 ))
+          echo "$exit_code"
           if [[ $exit_code -ne 0 ]]; then
             echo "an error occured in $file"
             exit 1
