@@ -27,21 +27,7 @@ jobs:
     - name: Lint with pylint
       run: |
         pip install pylint
-        for file in **/*.py; do
-          echo "pylint $file"
-          pylint "$file"
-          exit_code=$?
-          echo "pylint $file exit code = $exit_code"
-          exit_code=$(( $exit_code % 4 ))
-          echo "exit code % 4 = $exit_code"
-          if [[ $exit_code -ne 0 ]]
-          then
-            echo "an error occured in $file"
-            exit 1
-          else
-            echo "no error occured in $file"
-          fi
-        done
+        find . -name '*.py' | xargs pylint -E 
     - name: Test with unittest
       run: |
         pip install unittest
