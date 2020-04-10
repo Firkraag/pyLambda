@@ -34,6 +34,8 @@ jobs:
           if [[ $exit_code -ne 0 ]]; then
             echo "an error occured in $file"
             exit 1
+          else
+            echo "abc"
           #    else
           #      if [[ $exit_code -eq 2 ]]; then
           #            echo "a error occured in $file"
