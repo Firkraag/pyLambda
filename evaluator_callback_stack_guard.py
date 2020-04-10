@@ -1,8 +1,17 @@
 #!/usr/bin/env python
 # encoding: utf-8
+"""
+Enhanced cps evaluator that solves the problem of stack overflow.
+
+Guard the stack depth on start of function `evaluate`. When the stack depth
+exceeds the threshold, raises an exception that carries information about
+function and its arguments. This exception will throw away all stacks
+until caught by `Execute` that restarts the function with the arguments.
+"""
+# pylint: disable=C0111
 import sys
 from itertools import zip_longest
-from typing import Callable, Any, cast, List
+from typing import Callable, Any, cast, List, Sequence
 
 from ast import Ast, LiteralAst, VarAst, AssignAst, BinaryAst, LambdaAst, \
     IfAst, ProgAst, CallAst, LetAst
@@ -13,40 +22,37 @@ from parse import Parser
 from token_stream import TokenStream
 from utils import apply_op
 
-_StackDepth = 0
+_STACK_DEPTH = 0
 
 
 class _Continuation(Exception):
-    def __init__(self, f, args):
-        super(_Continuation, self).__init__(f, args)
-        self.f = f
-        self.args = args
+    def __init__(self, func: Callable, args: Sequence):
+        super(_Continuation, self).__init__(func, args)
+        self.func: Callable = func
+        self.args: Sequence = args
 
 
-def _GUARD(f, args):
-    """
-    mark what function to guard
-    """
-    global _StackDepth
-    _StackDepth -= 1
-    if _StackDepth < 0:
-        raise _Continuation(f, args)
+def _guard(func: Callable, args: Sequence) -> Any:
+    global _STACK_DEPTH
+    _STACK_DEPTH -= 1
+    if _STACK_DEPTH < 0:
+        raise _Continuation(func, args)
 
 
-def _Execute(f, args):
-    global _StackDepth
+def execute(func: Callable, args: Sequence) -> Any:
+    global _STACK_DEPTH
     while True:
-        _StackDepth = 200
+        _STACK_DEPTH = 200
         try:
-            return f(*args)
-        except _Continuation as e:
-            f = e.f
-            args = e.args
+            return func(*args)
+        except _Continuation as continuation:
+            func = continuation.func
+            args = continuation.args
 
 
 def evaluate(
         ast: Ast, env: Environment, callback: Callable[[Any], Any]) -> None:
-    _GUARD(evaluate, (ast, env, callback))
+    _guard(evaluate, (ast, env, callback))
     if isinstance(ast, LiteralAst):
         callback(ast.value)
     elif isinstance(ast, VarAst):
@@ -131,7 +137,7 @@ def evaluate(
 
         evaluate(call_ast.func, env, call_callback)
     else:
-        raise Exception(f"I don'tt know how to evaluate {ast}")
+        raise Exception(f"I don't know how to evaluate {ast}")
 
 
 def make_lambda(env: Environment, ast: LambdaAst):
@@ -172,10 +178,10 @@ def main():
     with open(sys.argv[1]) as file:
         code = file.read()
         parser = Parser(TokenStream(InputStream(code)))
-        _Execute(evaluate,
-                 (parser(),
-                  global_env,
-                  lambda result: print(f"*** Result: {result}")))
+        execute(evaluate,
+                (parser(),
+                 global_env,
+                 lambda result: print(f"*** Result: {result}")))
 
 
 if __name__ == "__main__":

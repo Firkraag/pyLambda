@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # encoding: utf-8
+# pylint: disable=C0111
 from ast import (AssignAst, BinaryAst, CallAst, IfAst, LambdaAst, LetAst,
                  LiteralAst, ProgAst, VarAst, VarDefAst)
 from unittest import TestCase
@@ -19,13 +20,12 @@ class TestEvaluate(TestCase):
         evaluate(ast, environment, lambda value: self.assertEqual(value, 1.0))
         ast = LiteralAst(True)
         environment = Environment()
-        evaluate(ast, environment, lambda value: self.assertTrue(value))
+        evaluate(ast, environment, self.assertTrue)
         ast = LiteralAst(False)
         environment = Environment()
-        evaluate(ast, environment, lambda value: self.assertFalse(value))
+        evaluate(ast, environment, self.assertFalse)
         ast = LiteralAst("aaa")
-        evaluate(ast,
-                 Environment(),
+        evaluate(ast, Environment(),
                  lambda value: self.assertEqual(value, "aaa"))
         ast = BinaryAst(
             '+',
@@ -36,7 +36,7 @@ class TestEvaluate(TestCase):
             Environment(),
             lambda value: self.assertEqual(value, 3.0))
         ast = ProgAst([])
-        evaluate(ast, Environment(), lambda value: self.assertFalse(value))
+        evaluate(ast, Environment(), self.assertFalse)
         ast = ProgAst([LiteralAst(1)])
         evaluate(
             ast,
@@ -99,7 +99,7 @@ class TestEvaluate(TestCase):
             lambda value: self.assertEqual(value, 55.0))
         # # let (x) x;
         ast = LetAst([VarDefAst("x", None)], VarAst("x"))
-        evaluate(ast, Environment(), lambda value: self.assertFalse(value))
+        evaluate(ast, Environment(), self.assertFalse)
         # # let (x = 2, y = x + 1, z = x + y) x + y + z
         ast = LetAst(
             [
@@ -167,7 +167,7 @@ class TestEvaluate(TestCase):
             LiteralAst(1),
             None,
         )
-        evaluate(ast, Environment(), lambda value: self.assertFalse(value))
+        evaluate(ast, Environment(), self.assertFalse)
         ast = {"type": "foo", "value": 'foo'}
         with self.assertRaises(Exception):
             evaluate(ast, Environment(), lambda value: value)
@@ -212,13 +212,13 @@ class TestEvaluate(TestCase):
             LiteralAst(1),
             None
         )
-        evaluate(ast, Environment(), lambda value: self.assertFalse(value))
+        evaluate(ast, Environment(), self.assertFalse)
         ast = CallAst(
             LiteralAst(1),
             [],
         )
         with self.assertRaises(Exception):
-            evaluate(ast, Environment(), lambda value: self.assertFalse(value))
+            evaluate(ast, Environment(), self.assertFalse)
         code = """
         2 + twice(3, 4)
         """

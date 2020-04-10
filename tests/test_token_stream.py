@@ -1,9 +1,12 @@
 #!/usr/bin/env python
 # encoding: utf-8
-from unittest import TestCase
-from input_stream import InputStream
-from token_stream import TokenStream, Token
+# pylint: disable=W0212
+# pylint: disable=C0111
 import string
+from unittest import TestCase
+
+from input_stream import InputStream
+from token_stream import Token, TokenStream
 
 
 class TestTokenStream(TestCase):
@@ -34,13 +37,13 @@ class TestTokenStream(TestCase):
         self.assertFalse(TokenStream.is_identifier_start(';'))
 
     def test_is_id(self):
-        for id in self.ID:
-            self.assertTrue(TokenStream.is_identifier(id))
+        for id_ in self.ID:
+            self.assertTrue(TokenStream.is_identifier(id_))
         self.assertFalse(TokenStream.is_identifier(';'))
 
     def test_is_op_char(self):
-        for op in self.OP:
-            self.assertTrue(TokenStream.is_operator(op))
+        for operator in self.OP:
+            self.assertTrue(TokenStream.is_operator(operator))
         self.assertFalse(TokenStream.is_operator(';'))
 
     def test_is_punc(self):

@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
+
+# pylint: disable=C0111
 from ast import (AssignAst, BinaryAst, CallAst, IfAst, LambdaAst, LetAst,
                  LiteralAst, ProgAst, VarAst, VarDefAst)
 from unittest import TestCase

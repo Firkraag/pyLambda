@@ -1,19 +1,20 @@
 #!/usr/bin/env python
 # encoding: utf-8
-import time
-from functools import partial
-from itertools import zip_longest
-from typing import Any, Dict, Callable
+"""
+evaluate ast to result
+"""
 import sys
+from ast import (AssignAst, Ast, BinaryAst, CallAst, IfAst, LambdaAst, LetAst,
+                 LiteralAst, ProgAst, VarAst)
+from itertools import zip_longest
+from typing import Any, Callable
 
-from ast import Ast, LiteralAst, VarAst, AssignAst, BinaryAst, LambdaAst,\
-                IfAst, ProgAst, CallAst, LetAst
 from environment import Environment
 from input_stream import InputStream
 from parse import Parser
+from primitive import primitive
 from token_stream import TokenStream
 from utils import apply_op
-from primitive import primitive
 
 
 def evaluate(ast: Ast, env: Environment) -> Any:
@@ -90,6 +91,7 @@ def evaluate(ast: Ast, env: Environment) -> Any:
     raise Exception(f"I don't know how to evaluate {ast}")
 
 
+# pylint: disable=C0111
 def make_lambda(env: Environment, ast: LambdaAst) -> Callable:
     def lambda_function(*args):
         names = ast.params
@@ -104,6 +106,8 @@ def make_lambda(env: Environment, ast: LambdaAst) -> Callable:
         env.define(ast.name, lambda_function)
 
     return lambda_function
+
+# pylint: disable=C0111
 
 
 def main():

@@ -29,14 +29,14 @@ def _timing(callback, func):
         callback(result)
     func(timing_callback)
 
-
+# pylint: disable=unused-argument
 def _halt(callback):
     pass
 
 
-def _twice(callback: Callable[[Any], Any], a, b):
-    callback(a)
-    callback(b)
+def _twice(callback: Callable[[Any], Any], arg1, arg2):
+    callback(arg1)
+    callback(arg2)
 
 
 def _call_cc(callback: Callable, func: Callable):

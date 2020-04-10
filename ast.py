@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
+
+# pylint: disable=C0111
 from dataclasses import dataclass
 from typing import Union, Optional, List
 

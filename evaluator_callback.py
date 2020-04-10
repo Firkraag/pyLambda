@@ -1,8 +1,13 @@
 #!/usr/bin/env python
 # encoding: utf-8
+"""
+continuation-passing style evaluator
+
+cps ensures that when we enter evaluate, all preceding function are tail calls,
+so all function stacks are garbage and can be thrown away.
+"""
 from itertools import zip_longest
 from typing import Callable, Any, cast, List
-
 from ast import Ast, LiteralAst, VarAst, AssignAst, BinaryAst, LambdaAst, \
     IfAst, ProgAst, CallAst, LetAst
 from callback_primitive import primitive
@@ -13,6 +18,7 @@ from token_stream import TokenStream
 from utils import apply_op
 
 
+# pylint: disable=C0111
 def evaluate(
         ast: Ast, env: Environment, callback: Callable[[Any], Any]) -> None:
     if isinstance(ast, LiteralAst):
@@ -99,9 +105,10 @@ def evaluate(
         call_ast = cast(CallAst, ast)
         evaluate(call_ast.func, env, call_callback)
     else:
-        raise Exception(f"I don'tt know how to evaluate {ast}")
+        raise Exception(f"I don't know how to evaluate {ast}")
 
 
+# pylint: disable=C0111
 def make_lambda(env: Environment, ast: LambdaAst):
     def lambda_function(callback: Callable, *args: Any) -> None:
         assert len(ast.params) >= len(args)
