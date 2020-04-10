@@ -27,7 +27,7 @@ jobs:
     - name: Lint with pylint
       run: |
         pip install pylint
-        for file in $(find . **/*.py; do
+        for file in **/*.py; do
           echo "pylint $file"
           pylint "$file"
           exit_code=$?
