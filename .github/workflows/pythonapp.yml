@@ -30,5 +30,4 @@ jobs:
         find . -name '*.py' | xargs pylint -E 
     - name: Test with unittest
       run: |
-        pip install unittest
         python -m unittest discover tests
