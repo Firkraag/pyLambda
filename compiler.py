@@ -7,7 +7,6 @@ compared to interpreting the AST.
 import json
 import sys
 from typing import Union
-aa`
 from ast import Ast, LiteralAst, BinaryAst, VarAst, AssignAst, LetAst,\
     LambdaAst, IfAst, CallAst, ProgAst
 from input_stream import InputStream
