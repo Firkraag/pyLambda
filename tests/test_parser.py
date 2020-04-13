@@ -3,6 +3,7 @@
 
 # pylint: disable=W0212
 # pylint: disable=C0111
+# pylint: disable=too-many-public-methods
 
 from unittest import TestCase
 
@@ -60,11 +61,9 @@ class TestParser(TestCase):
 
     def test_delimited(self):
         parser = Parser(TokenStream(InputStream('{a, b, c}')))
-        self.assertEqual(parser._delimited('{',
-                                           '}',
-                                           ',',
-                                           parser._parse_varname),
-                         ['a', 'b', 'c'])
+        self.assertEqual(
+            parser._delimited('{', '}', ',', parser._parse_varname),
+            ['a', 'b', 'c'])
         parser = Parser(TokenStream(InputStream('{}')))
         self.assertEqual(parser._delimited('{', '}', ',',
                                            parser._parse_varname), [])
@@ -77,17 +76,13 @@ class TestParser(TestCase):
 
     def test_parse_lambda(self):
         parser = Parser(TokenStream(InputStream('lambda (a, b) 1')))
-        self.assertEqual(parser._parse_lambda('lambda'),
-                         LambdaAst(
-                             '',
-                             ['a', 'b'],
-                             LiteralAst(1),))
+        self.assertEqual(
+            parser._parse_lambda('lambda'),
+            LambdaAst('', ['a', 'b'], LiteralAst(1)))
         parser = Parser(TokenStream(InputStream('lambda foo () "abc"')))
-        self.assertEqual(parser._parse_lambda('lambda'),
-                         LambdaAst(
-                             'foo',
-                             [],
-                             LiteralAst('abc'),))
+        self.assertEqual(
+            parser._parse_lambda('lambda'),
+            LambdaAst('foo', [], LiteralAst('abc')))
 
     def test_parse_let(self):
         parser = Parser(TokenStream(InputStream('let (a = 1, b = 2) 1')))
@@ -126,19 +121,19 @@ class TestParser(TestCase):
 
     def test_parse_toplevel(self):
         parser = Parser(TokenStream(InputStream('1;"a";foo')))
-        self.assertEqual(parser._parse_toplevel(),
-                         ProgAst([
-                             LiteralAst(1.0),
-                             LiteralAst("a"),
-                             VarAst('foo'),
-                         ]))
+        self.assertEqual(
+            parser._parse_toplevel(),
+            ProgAst([
+                LiteralAst(1.0),
+                LiteralAst("a"),
+                VarAst('foo')]))
         parser = Parser(TokenStream(InputStream('1;"a";foo;')))
-        self.assertEqual(parser._parse_toplevel(),
-                         ProgAst([
-                             LiteralAst(1.0),
-                             LiteralAst("a"),
-                             VarAst('foo'),
-                         ]))
+        self.assertEqual(
+            parser._parse_toplevel(),
+            ProgAst([
+                LiteralAst(1.0),
+                LiteralAst("a"),
+                VarAst('foo')]))
         parser = Parser(TokenStream(InputStream('')))
         self.assertEqual(parser._parse_toplevel(), ProgAst([]))
         parser = Parser(TokenStream(InputStream('a 1 2')))
@@ -147,18 +142,19 @@ class TestParser(TestCase):
 
     def test_call(self):
         parser = Parser(TokenStream(InputStream('1;"a";foo')))
-        self.assertEqual(parser(), ProgAst([
-            LiteralAst(1.0),
-            LiteralAst('a'),
-            VarAst('foo'),
-        ]))
+        self.assertEqual(
+            parser(),
+            ProgAst([
+                LiteralAst(1.0),
+                LiteralAst('a'),
+                VarAst('foo')]))
         parser = Parser(TokenStream(InputStream('1;"a";foo;')))
-        self.assertEqual(parser(),
-                         ProgAst([
-                             LiteralAst(1.0),
-                             LiteralAst('a'),
-                             VarAst('foo'),
-                         ]))
+        self.assertEqual(
+            parser(),
+            ProgAst([
+                LiteralAst(1.0),
+                LiteralAst('a'),
+                VarAst('foo')]))
         parser = Parser(TokenStream(InputStream('')))
         self.assertEqual(parser(), ProgAst([]))
         parser = Parser(TokenStream(InputStream('a 1 2')))
@@ -175,8 +171,7 @@ class TestParser(TestCase):
         parser = Parser(TokenStream(InputStream('{1;"bc"}')))
         self.assertEqual(parser._parse_prog(), ProgAst([
             LiteralAst(1),
-            LiteralAst("bc"),
-        ]))
+            LiteralAst("bc")]))
 
     def test_parse_if(self):
         parser = Parser(TokenStream(InputStream('if 1 then 2 else 3')))
@@ -185,8 +180,7 @@ class TestParser(TestCase):
             IfAst(
                 LiteralAst(1.0),
                 LiteralAst(2.0),
-                LiteralAst(3.0),
-            ))
+                LiteralAst(3.0)))
 
         parser = Parser(TokenStream(InputStream('if 1 {2} else 3')))
         self.assertEqual(
@@ -292,19 +286,20 @@ class TestParser(TestCase):
             BinaryAst(
                 '+',
                 VarAst('a'),
-                BinaryAst(
-                    '*',
-                    VarAst('b'),
-                    VarAst('c'),
-                ),
-            ))
+                BinaryAst('*', VarAst('b'), VarAst('c'))))
         parser = Parser(TokenStream(InputStream('a + b = c')))
         self.assertEqual(
             parser._maybe_binary(parser._parse_atom(), 0),
             AssignAst(
                 BinaryAst('+', VarAst('a'), VarAst('b')),
-                VarAst('c'),
-            ))
+                VarAst('c')))
+        parser = Parser(TokenStream(InputStream('a + b + c')))
+        self.assertEqual(
+            parser._maybe_binary(parser._parse_atom(), 0),
+            BinaryAst(
+                '+',
+                BinaryAst('+', VarAst('a'), VarAst('b')),
+                VarAst('c')))
 
     def test_unexpected(self):
         parser = Parser(TokenStream(InputStream('a + b * c')))
