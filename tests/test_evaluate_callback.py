@@ -14,6 +14,7 @@ from token_stream import TokenStream
 
 
 class TestEvaluate(TestCase):
+    # pylint: disable=too-many-statements
     def test_evaluate(self):
         ast = LiteralAst(1.0)
         environment = Environment()
@@ -67,10 +68,7 @@ class TestEvaluate(TestCase):
             ast,
             Environment(),
             lambda value: self.assertEqual(value, 1.0))
-        ast = CallAst(
-            LambdaAst("", ["a"], VarAst("a")),
-            [LiteralAst("abc")],
-        )
+        ast = CallAst(LambdaAst("", ["a"], VarAst("a")), [LiteralAst("abc")])
         evaluate(
             ast,
             Environment(),
@@ -90,9 +88,8 @@ class TestEvaluate(TestCase):
                                       '-',
                                       VarAst('n'),
                                       LiteralAst(1))])),
-                    LiteralAst(0), ), ),
-            [LiteralAst(10)]
-        )
+                    LiteralAst(0))),
+            [LiteralAst(10)])
         evaluate(
             ast,
             Environment(),
@@ -108,17 +105,11 @@ class TestEvaluate(TestCase):
                     "+",
                     VarAst("x"),
                     LiteralAst(1))),
-                VarDefAst("z", BinaryAst(
-                    "+",
-                    VarAst("x"),
-                    VarAst("y"))),
-            ],
+                VarDefAst("z", BinaryAst("+", VarAst("x"), VarAst("y")))],
             BinaryAst(
                 "+",
                 BinaryAst("+", VarAst("x"), VarAst("y")),
-                VarAst("z"),
-            )
-        )
+                VarAst("z")))
         evaluate(
             ast,
             Environment(),
@@ -133,20 +124,15 @@ class TestEvaluate(TestCase):
                     VarDefAst(
                         'y', BinaryAst('+', VarAst('x'), LiteralAst(1))),
                     VarDefAst(
-                        'z', BinaryAst('+', VarAst('x'), VarAst('y'))),
-                ],
+                        'z', BinaryAst('+', VarAst('x'), VarAst('y')))],
                 BinaryAst(
                     '+',
                     BinaryAst('+', VarAst('x'), VarAst('y')),
-                    VarAst('z'),
-                ),
-            ),
+                    VarAst('z'))),
             BinaryAst(
                 '+',
                 BinaryAst('+', VarAst('x'), VarAst('y')),
-                VarAst('z'),
-            ),
-        ])
+                VarAst('z'))])
         with self.assertRaises(Exception):
             evaluate(ast, Environment(), lambda value: value)
         ast = IfAst(LiteralAst(""), LiteralAst(1), None)
@@ -165,8 +151,7 @@ class TestEvaluate(TestCase):
         ast = IfAst(
             LiteralAst(False),
             LiteralAst(1),
-            None,
-        )
+            None)
         evaluate(ast, Environment(), self.assertFalse)
         ast = {"type": "foo", "value": 'foo'}
         with self.assertRaises(Exception):
@@ -188,21 +173,18 @@ class TestEvaluate(TestCase):
                             CallAst(
                                 VarAst('fib'),
                                 [
-                                    BinaryAst('-', VarAst('n'), LiteralAst(1)),
-                                ]
-                            ),
+                                    BinaryAst(
+                                        '-',
+                                        VarAst('n'),
+                                        LiteralAst(1))]),
                             CallAst(
                                 VarAst('fib'),
                                 [
-                                    BinaryAst('-', VarAst('n'), LiteralAst(2)),
-                                ]
-                            ),
-                        )
-                    )
-                )
-            ),
-            CallAst(VarAst('fib'), [LiteralAst(6)]),
-        ])
+                                    BinaryAst(
+                                        '-',
+                                        VarAst('n'),
+                                        LiteralAst(2))]))))),
+            CallAst(VarAst('fib'), [LiteralAst(6)])])
         evaluate(
             ast,
             Environment(),
@@ -210,13 +192,9 @@ class TestEvaluate(TestCase):
         ast = IfAst(
             LiteralAst(False),
             LiteralAst(1),
-            None
-        )
+            None)
         evaluate(ast, Environment(), self.assertFalse)
-        ast = CallAst(
-            LiteralAst(1),
-            [],
-        )
+        ast = CallAst(LiteralAst(1), [])
         with self.assertRaises(Exception):
             evaluate(ast, Environment(), self.assertFalse)
         code = """

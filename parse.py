@@ -138,7 +138,7 @@ class Parser:
         token = self._token_stream.next()
         if token.type == 'var':
             return token.value
-        self._token_stream.croak('Expecting variable name')
+        return self._token_stream.croak('Expecting variable name')
 
     def _parse_toplevel(self) -> ProgAst:
         prog = []
@@ -190,7 +190,7 @@ class Parser:
                 return LiteralAst(token.value)
             if token.type == 'var':
                 return VarAst(token.value)
-            self.unexpected()
+            return self.unexpected()
 
         return self._maybe_call(parser)
 

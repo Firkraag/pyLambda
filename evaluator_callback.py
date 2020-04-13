@@ -28,19 +28,19 @@ def evaluate(
     elif isinstance(ast, AssignAst):
         if not isinstance(ast.left, VarAst):
             raise Exception(f"Cannot assign to {ast.left}")
-        left: VarAst = cast(VarAst, ast.left)
+        left_ast: VarAst = cast(VarAst, ast.left)
         evaluate(ast.right, env, lambda right: callback(
-            env.set(left.name, right)))
+            env.set(left_ast.name, right)))
     elif isinstance(ast, BinaryAst):
 
         def left_callback(left: Any) -> None:
             def right_callback(right: Any) -> None:
-                callback(apply_op(ast.operator, left, right))
+                callback(apply_op(binary_ast.operator, left, right))
 
-            evaluate(ast.right, env, right_callback)
+            evaluate(binary_ast.right, env, right_callback)
 
-        ast = cast(BinaryAst, ast)
-        evaluate(ast.left, env, left_callback)
+        binary_ast = cast(BinaryAst, ast)
+        evaluate(binary_ast.left, env, left_callback)
     elif isinstance(ast, LambdaAst):
         callback(make_lambda(env, ast))
     elif isinstance(ast, IfAst):
@@ -56,25 +56,7 @@ def evaluate(
 
         evaluate(if_ast.cond, env, if_callback)
     elif isinstance(ast, LetAst):
-
-        def loop(env: Environment, i: int) -> None:
-            if i < len(let_ast.vardefs):
-                vardef = let_ast.vardefs[i]
-                scope = env.extend()
-                if vardef.define:
-                    def define_callback(value: Any) -> None:
-                        scope.define(vardef.name, value)
-                        loop(scope, i + 1)
-
-                    evaluate(vardef.define, env, define_callback)
-                else:
-                    scope.define(vardef.name, False)
-                    loop(scope, i + 1)
-            else:
-                evaluate(let_ast.body, env, callback)
-
-        let_ast = cast(LetAst, ast)
-        loop(env, 0)
+        _evaluate_let(ast, env, callback)
     elif isinstance(ast, ProgAst):
 
         def loop(last: Any, i: int) -> None:
@@ -87,28 +69,51 @@ def evaluate(
         prog_ast = cast(ProgAst, ast)
         loop(False, 0)
     elif isinstance(ast, CallAst):
+        _evaluate_call(ast, env, callback)
 
-        def call_callback(func: Callable[..., None]) -> None:
-            def loop(i: int) -> None:
-                def arg_callback(arg: Any) -> None:
-                    args[i + 1] = arg
-                    loop(i + 1)
-
-                if i < len(call_ast.args):
-                    evaluate(call_ast.args[i], env, arg_callback)
-                else:
-                    func(*args)
-
-            args: List[Callable, ...] = [callback] * (len(call_ast.args) + 1)
-            loop(0)
-
-        call_ast = cast(CallAst, ast)
-        evaluate(call_ast.func, env, call_callback)
     else:
         raise Exception(f"I don't know how to evaluate {ast}")
 
 
+def _evaluate_let(let_ast: LetAst, env: Environment, callback: [[Any], Any]) -> None:
+    def loop(env: Environment, i: int) -> None:
+        if i < len(let_ast.vardefs):
+            vardef = let_ast.vardefs[i]
+            scope = env.extend()
+            if vardef.define:
+                def define_callback(value: Any) -> None:
+                    scope.define(vardef.name, value)
+                    loop(scope, i + 1)
+
+                evaluate(vardef.define, env, define_callback)
+            else:
+                scope.define(vardef.name, False)
+                loop(scope, i + 1)
+        else:
+            evaluate(let_ast.body, env, callback)
+
+    loop(env, 0)
+
+
+def _evaluate_call(call_ast: CallAst, env: Environment, callback: [[Any], Any]) -> None:
+    def call_callback(func: Callable[..., None]) -> None:
+        def loop(i: int) -> None:
+            def arg_callback(arg: Any) -> None:
+                args[i + 1] = arg
+                loop(i + 1)
+
+            if i < len(call_ast.args):
+                evaluate(call_ast.args[i], env, arg_callback)
+            else:
+                func(*args)
+
+        args: List[Callable, ...] = [callback] * (len(call_ast.args) + 1)
+        loop(0)
+
+    evaluate(call_ast.func, env, call_callback)
 # pylint: disable=C0111
+
+
 def make_lambda(env: Environment, ast: LambdaAst):
     def lambda_function(callback: Callable, *args: Any) -> None:
         assert len(ast.params) >= len(args)

@@ -1,4 +1,4 @@
-lambda loop(n) {
+loop = lambda (n) {
     if n < 1 {
         n;
     }

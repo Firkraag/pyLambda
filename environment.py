@@ -2,7 +2,7 @@
 # encoding: utf-8
 from typing import Optional, Any, Dict, TypeVar
 
-T = TypeVar('T')
+Type = TypeVar('T')
 
 
 class Environment:
@@ -30,7 +30,7 @@ class Environment:
                 return scope
             scope = scope.parent
 
-    def define(self, var_name: str, value: T) -> T:
+    def define(self, var_name: str, value: Type) -> Type:
         """
         Create a variable in the current scope
         :param var_name:
@@ -57,8 +57,9 @@ class Environment:
         """
         Lookup the actual scope where the variable is defined and
         set the value of a variable in that scope.
-        If variable is not defined and current scope is global scope,
-        define variable in global. Otherwise, raise a exception.
+        If varialbe is defined, set variable, else if variable is not defined
+        but current scope is global scope, define variable in global scope,
+        otherwise, raise a exception.
         :param var_name:
         :param value:
         :return:
