@@ -154,7 +154,7 @@ class Parser:
         if not self._is_punc('{'):
             self._skip_kw('then')
         then = self._parse_expression()
-        else_ = None
+        else_ = LiteralAst(False)
         if self._is_kw('else'):
             self._skip_kw('else')
             else_ = self._parse_expression()
@@ -186,7 +186,7 @@ class Parser:
             if self._is_kw('λ'):
                 return self._parse_lambda('λ')
             token = self._token_stream.next()
-            if token.type == 'str' or token.type == 'num':
+            if token.type in ('str', 'num'):
                 return LiteralAst(token.value)
             if token.type == 'var':
                 return VarAst(token.value)

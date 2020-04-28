@@ -14,6 +14,7 @@ from token_stream import TokenStream
 
 
 class TestEvaluate(TestCase):
+    # pylint: disable=too-many-statements
     def test_evaluate(self):
         ast = LiteralAst(1.0)
         execute(evaluate, [ast, Environment(),
@@ -154,7 +155,7 @@ class TestEvaluate(TestCase):
         ast = IfAst(
             LiteralAst(False),
             LiteralAst(1),
-            None,
+            LiteralAst(False),
         )
         execute(evaluate, [ast, Environment(), self.assertFalse])
         ast = {"type": "foo", "value": 'foo'}
@@ -230,7 +231,7 @@ class TestEvaluate(TestCase):
         ast = IfAst(
             LiteralAst(False),
             LiteralAst(1),
-            None
+            LiteralAst(False),
         )
         execute(evaluate, [ast, Environment(), self.assertFalse])
         ast = CallAst(

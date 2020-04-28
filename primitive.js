@@ -6,12 +6,12 @@ print = function (txt) {
 println = function (txt) {
     this.console.log(txt);
 };
-fibPY = function (n) {
+fibpy = function (n) {
     if (n < 2) {
         return n;
     }
     else {
-        return fibPY(n - 1) + fibPY(n - 2);
+        return fibpy(n - 1) + fibpy(n - 2);
     }
 };
 time = function (func) {

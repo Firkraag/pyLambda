@@ -68,9 +68,7 @@ def evaluate(ast: Ast, env: Environment) -> Any:
         cond = evaluate(ast.cond, env)
         if cond is not False:
             return evaluate(ast.then, env)
-        if ast.else_:
-            return evaluate(ast.else_, env)
-        return False
+        return evaluate(ast.else_, env)
     if isinstance(ast, ProgAst):
         result = False
         for expr in ast.prog:

@@ -74,17 +74,15 @@ def evaluate(
 
         evaluate(ast.left, env, left_callback)
     elif isinstance(ast, LambdaAst):
-        callback(make_lambda(env, ast))
+        callback(_make_lambda(env, ast))
     elif isinstance(ast, IfAst):
         if_ast = cast(IfAst, ast)
 
         def if_callback(cond: Any) -> None:
             if cond is not False:
                 evaluate(if_ast.then, env, callback)
-            elif if_ast.else_ is not None:
-                evaluate(if_ast.else_, env, callback)
             else:
-                callback(False)
+                evaluate(if_ast.else_, env, callback)
 
         evaluate(if_ast.cond, env, if_callback)
     elif isinstance(ast, LetAst):
@@ -145,17 +143,19 @@ def _evaluate_call(call_ast: CallAst, env: Environment, callback: Callable[[Any]
     evaluate(call_ast.func, env, call_callback)
 
 
-def make_lambda(env: Environment, ast: LambdaAst):
+def _make_lambda(env: Environment, ast: LambdaAst):
     def lambda_function(callback: Callable, *args: Any) -> None:
         assert len(ast.params) >= len(args)
         scope = env.extend()
+        if ast.name:
+            scope.define(ast.name, lambda_function)
         for name, value in zip_longest(ast.params, args, fillvalue=False):
             scope.define(name, value)
         evaluate(ast.body, scope, callback)
 
-    if ast.name:
-        env = env.extend()
-        env.define(ast.name, lambda_function)
+    # if ast.name:
+    #     env = env.extend()
+    #     env.define(ast.name, lambda_function)
     return lambda_function
 
 

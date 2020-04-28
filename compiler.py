@@ -7,11 +7,13 @@ gaining an dramatic speed improvement compared to interpreting the AST.
 import json
 import sys
 from typing import Union
-from ast import Ast, LiteralAst, BinaryAst, VarAst, AssignAst, LetAst,\
+
+from ast import Ast, LiteralAst, BinaryAst, VarAst, AssignAst, LetAst, \
     LambdaAst, IfAst, CallAst, ProgAst
 from input_stream import InputStream
 from parse import Parser
 from token_stream import TokenStream
+
 
 # pylint: disable=C0111
 
@@ -47,9 +49,13 @@ def _js_assign(ast: AssignAst) -> str:
 
 def _js_lambda(ast: LambdaAst) -> str:
     code = "(function "
-    if ast.name:
-        code += _make_var(ast.name)
+    func_name = ast.name or 'β_CC'
+    code += _make_var(func_name)
     code += "(" + ', '.join(_make_var(var) for var in ast.params) + ") {"
+    if ast.iife_params:
+        code += "var "
+        code += ', '.join(ast.iife_params) + ';'
+    code += f'GUARD(arguments, {func_name});'
     code += "return " + to_js(ast.body) + " })"
     return code
 
@@ -72,8 +78,19 @@ def _js_let(ast: LetAst) -> str:
 def _js_if(ast: IfAst) -> str:
     cond_code = to_js(ast.cond)
     then_code = to_js(ast.then)
-    else_code = to_js(ast.else_) if ast.else_ else 'false'
-    return f'({cond_code} !== false ? {then_code} : {else_code})'
+    else_code = to_js(ast.else_)
+    if not _is_bool(ast.cond):
+        cond_code += ' !== false'
+    return f'({cond_code} ? {then_code} : {else_code})'
+
+
+def _is_bool(ast: Ast) -> bool:
+    if isinstance(ast, BinaryAst):
+        if ast.operator in "< > <= >= == !=".split():
+            return True
+        if ast.operator in ("&&", "||"):
+            return _is_bool(ast.left) and _is_bool(ast.right)
+    return False
 
 
 def _js_prog(ast: ProgAst) -> str:
@@ -99,6 +116,7 @@ _MAPPING = {
     CallAst: _js_call,
     ProgAst: _js_prog,
 }
+
 
 # pylint: disable=C0111
 

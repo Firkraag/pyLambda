@@ -151,7 +151,7 @@ class TestEvaluate(TestCase):
         ast = IfAst(
             LiteralAst(False),
             LiteralAst(1),
-            None)
+            LiteralAst(False))
         evaluate(ast, Environment(), self.assertFalse)
         ast = {"type": "foo", "value": 'foo'}
         with self.assertRaises(Exception):
@@ -192,7 +192,7 @@ class TestEvaluate(TestCase):
         ast = IfAst(
             LiteralAst(False),
             LiteralAst(1),
-            None)
+            LiteralAst(False))
         evaluate(ast, Environment(), self.assertFalse)
         ast = CallAst(LiteralAst(1), [])
         with self.assertRaises(Exception):
