@@ -66,7 +66,7 @@ def _cps_if(if_ast: IfAst, k: Callable[[Ast], Ast]) -> CallAst:
     which receives that continuation as an argument.
     The body of this IIFE will just call the continuation
     with the result of the if expression.
-    
+
     The following is a sample transformation:
 
     a = if foo then 1 else 2;
