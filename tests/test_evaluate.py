@@ -136,7 +136,7 @@ class TestEvaluate(TestCase):
         ast = IfAst(
             LiteralAst(False),
             LiteralAst(1),
-            None
+            LiteralAst(False),
         )
         self.assertEqual(evaluate(ast, Environment()), False)
         ast = {"type": "foo", "value": 'foo'}

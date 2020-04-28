@@ -1,0 +1,2 @@
+foo = lambda(n) if n < 1 then 0 else foo(n - 1);
+foo(10000)

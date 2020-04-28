@@ -1,2 +1,24 @@
-foo = lambda(n) n;
-a = foo(10);
+#foo = lambda(n) n;
+#a = foo(11);
+#a = if foo() then 1 else 2;
+#b = if bar() then 3 else 4;
+#c = if baz() then 5 else 6;
+#lambda foo(n) n;
+#lambda bar(n) n;
+#a = 10;
+#a;
+#a = 11;
+#a = foo();
+#1;
+#fib = λ(n) {
+  #if n < 2 then n
+  #else
+    #fib(n - 1) +
+    #fib(n - 2);
+#};
+fib = λ(n) if n < 2 then n else fib(n - 1) + fib(n - 2);
+#time( λ() println(fib(10)) );
+
+#a = if foo then 1 else 2;
+#print(a);
+#lambda (n) lambda (n) lambda () 1;

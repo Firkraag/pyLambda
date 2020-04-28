@@ -1,13 +1,25 @@
 #!/usr/bin/env python
 # encoding: utf-8
+# pylint: disable=missing-docstring
+from dataclasses import dataclass, field
+from typing import List, Optional, Union
 
-# pylint: disable=C0111
-from dataclasses import dataclass
-from typing import Union, Optional, List
+from environment import Environment
+
+
+@dataclass
+class VarDefine:
+    refs: List['VarAst'] = field(default_factory=list)
+    assigned: int = 0
+    # kind: 1 -> global var, 2 -> lambda param var, 3 -> iife var
+    # For global and iife var, constant means var is assigned only once.
+    # For lambda param var, constant means param var is never assigned
+    # in lambda body.
+    kind: int = 2
 
 
 class Ast:
-    pass
+    env: Optional[Environment] = None
 
 
 @dataclass
@@ -18,6 +30,7 @@ class LiteralAst(Ast):
 @dataclass
 class VarAst(Ast):
     name: str
+    define: Optional[VarDefine] = None
 
 
 @dataclass
@@ -31,6 +44,8 @@ class LambdaAst(Ast):
     name: str
     params: List[str]
     body: Ast
+    iife_params: List = field(default_factory=list)
+    # never_executed: bool = True
 
 
 @dataclass
@@ -54,7 +69,7 @@ class ProgAst(Ast):
 class IfAst(Ast):
     cond: Ast
     then: Ast
-    else_: Optional[Ast]
+    else_: Ast
 
 
 @dataclass

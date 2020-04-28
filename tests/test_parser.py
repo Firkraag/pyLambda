@@ -193,7 +193,7 @@ class TestParser(TestCase):
         parser = Parser(TokenStream(InputStream('if 1 then 2')))
         self.assertEqual(
             parser._parse_if(),
-            IfAst(LiteralAst(1.0), LiteralAst(2.0), None))
+            IfAst(LiteralAst(1.0), LiteralAst(2.0), LiteralAst(False)))
 
     def test_parse_atom(self):
         parser = Parser(TokenStream(InputStream('(1)')))
@@ -258,7 +258,7 @@ class TestParser(TestCase):
                 IfAst(
                     LiteralAst(1),
                     CallAst(CallAst(LiteralAst(2), []), []),
-                    None),
+                    LiteralAst(False)),
                 []))
 
         parser = Parser(TokenStream(InputStream('1 + ')))

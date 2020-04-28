@@ -1,0 +1,32 @@
+#a = 1;
+#fib = lambda (n, m) {
+    #a = n;
+    #n = m;
+    #a = n;
+    #a;
+#};
+#a = 2;
+#fib = λ(n) if n < 2 then n else fib(n - 1) + fib(n - 2);
+#(λ(){
+  #let (a = 2, b = 5) {
+    #print(a + b);
+  #};
+#})();
+#(λ(){
+  #let (a = 2) {
+    #let (a = 3) {
+      #print(a);
+    #};
+    #print(a);
+  #};
+#})();
+#{1;2;lambda () {};a} = 1;
+a = 1;
+foo = lambda(c) {
+  lambda bar() {
+    (lambda(d) {d + 1;})(c)
+  };
+};
+foo(1);
+b = a;
+a + b;

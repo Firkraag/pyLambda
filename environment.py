@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 # encoding: utf-8
+"""
+Sturcture to hold variable info when we run program and optimize the program
+"""
 from typing import Optional, Any, Dict, TypeVar
 
 Type = TypeVar('T')
@@ -8,7 +11,14 @@ Type = TypeVar('T')
 class Environment:
     def __init__(self, parent: Optional['Environment'] = None):
         self.vars: Dict[str, Any] = {}
-        self.parent = parent
+        self.parent: Optional['Environment'] = parent
+
+    def is_global(self):
+        """
+        whether self is a global environment
+        :return:
+        """
+        return self.parent is None
 
     def extend(self) -> 'Environment':
         """
@@ -21,6 +31,7 @@ class Environment:
         """
         Find the scope where the variable with the given name is defined
         If not found, return None.
+        :rtype:
         :param var_name:
         :return:
         """
@@ -57,7 +68,7 @@ class Environment:
         """
         Lookup the actual scope where the variable is defined and
         set the value of a variable in that scope.
-        If varialbe is defined, set variable, else if variable is not defined
+        If variable is defined, set variable, else if variable is not defined
         but current scope is global scope, define variable in global scope,
         otherwise, raise a exception.
         :param var_name:

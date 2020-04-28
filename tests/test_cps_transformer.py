@@ -31,7 +31,19 @@ class CpsTransformerTest(TestCase):
         self.assertEqual(cps_ast, ProgAst([LiteralAst(1), LiteralAst(2), ]))
         if_ast = IfAst(LiteralAst(1), LiteralAst(2), LiteralAst(3))
         cps_ast = to_cps(if_ast, lambda x: x)
-        self.assertEqual(cps_ast, if_ast)
+        expected_ast = CallAst(
+            LambdaAst(
+                '',
+                cps_ast.func.params,
+                IfAst(
+                    LiteralAst(1),
+                    CallAst(VarAst(cps_ast.func.params[0]), [LiteralAst(2)]),
+                    CallAst(VarAst(cps_ast.func.params[0]), [LiteralAst(3)]))),
+            [LambdaAst(
+                '',
+                cps_ast.args[0].params,
+                VarAst(cps_ast.args[0].params[0]))])
+        self.assertEqual(cps_ast, expected_ast)
         lambda_ast = LambdaAst('', ['x', 'y'], LiteralAst(1))
         cps_ast = to_cps(lambda_ast, lambda x: x)
         expected_ast = LambdaAst(
@@ -120,12 +132,34 @@ class CpsTransformerTest(TestCase):
     def test__cps_if(self):
         if_ast = IfAst(LiteralAst(1), LiteralAst(2), LiteralAst(3))
         cps_ast = _cps_if(if_ast, lambda x: x)
-        self.assertEqual(cps_ast, if_ast)
-        if_ast = IfAst(LiteralAst(1), LiteralAst(2), None,)
+        expected_ast = CallAst(
+            LambdaAst(
+                '',
+                cps_ast.func.params,
+                IfAst(
+                    LiteralAst(1),
+                    CallAst(VarAst(cps_ast.func.params[0]), [LiteralAst(2)]),
+                    CallAst(VarAst(cps_ast.func.params[0]), [LiteralAst(3)]))),
+            [LambdaAst(
+                '',
+                cps_ast.args[0].params,
+                VarAst(cps_ast.args[0].params[0]))])
+        self.assertEqual(cps_ast, expected_ast)
+        if_ast = IfAst(LiteralAst(1), LiteralAst(2), LiteralAst(False),)
         cps_ast = _cps_if(if_ast, lambda x: x)
-        self.assertEqual(
-            cps_ast,
-            IfAst(LiteralAst(1), LiteralAst(2), LiteralAst(False)))
+        expected_ast = CallAst(
+            LambdaAst(
+                '',
+                cps_ast.func.params,
+                IfAst(
+                    LiteralAst(1),
+                    CallAst(VarAst(cps_ast.func.params[0]), [LiteralAst(2)]),
+                    CallAst(VarAst(cps_ast.func.params[0]), [LiteralAst(False)]))),
+            [LambdaAst(
+                '',
+                cps_ast.args[0].params,
+                VarAst(cps_ast.args[0].params[0]))])
+        self.assertEqual(cps_ast, expected_ast)
 
     def test__cps_lambda(self):
         # lambda (x, y) 1
