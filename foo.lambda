@@ -1,1 +1,56 @@
-let (x = 2, y = 3, z = x + y) print(x + y + z);
+#let (x = 2, y = 3, z = x + y) println(x + y + z);
+##println(fibpy(27));
+#time(fibPY, 1);
+#fib = lambda(n) {
+    #if n < 2 then n else fib(n - 1) + fib(n - 2);
+    #lambda () n;
+#}
+foo = lambda() {
+    (lambda(n) {
+        (lambda(n) n)(2);
+        n;
+    })(1);
+};
+foo();
+#print("fib(27): ");
+#time(fib, 2);
+#print("fibpy(27): ");
+#time(fibpy, 10);
+#time(fib, 1);
+#sum(1, 2);
+#a = 1;
+#fibPY(45);
+#if false then 2 else 3;
+#lambda foo(n) if 1 then {
+    #1;
+    #foo(n - 1);
+ #} else 0;
+ #lambda foo(n) foo(n - 1);
+#if 1 + 2 * 3 + 1 + 2 then 2 else 3;
+#a = 1 != 2;
+#x;
+#fib = lambda(n) {print(n); (lambda(n) print(n))(1);print(n)};
+#(lambda (x, y) x)((lambda (n) n)(1), (lambda (n) n)(1));
+#(lambda (n) n)(1);
+#b = 1;
+#lambda (a) {
+    #b = 2;
+    #a = 1;
+    #a = 2;
+#}
+#(λ(){
+  #let (a = 2) {
+    #let (a = 3) {
+      #print(a);
+    #};
+    #print(a);
+  #};
+#})();
+#fib = lambda(n) {
+    #n = 2;
+    #lambda () {
+        #n = 4;
+        #n = 5;
+    #};
+    #n = 3;
+#}
