@@ -7,6 +7,10 @@ from typing import List, Optional, Union
 from environment import Environment
 
 
+class Ast:
+    env: Optional[Environment] = None
+
+
 @dataclass
 class VarDefine:
     refs: List['VarAst'] = field(default_factory=list)
@@ -16,10 +20,7 @@ class VarDefine:
     # For lambda param var, constant means param var is never assigned
     # in lambda body.
     kind: int = 2
-
-
-class Ast:
-    env: Optional[Environment] = None
+    current_value: Optional[Ast] = None
 
 
 @dataclass

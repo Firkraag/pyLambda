@@ -5,7 +5,7 @@ Sturcture to hold variable info when we run program and optimize the program
 """
 from typing import Optional, Any, Dict, TypeVar
 
-Type = TypeVar('T')
+T = TypeVar('T')
 
 
 class Environment:
@@ -41,7 +41,7 @@ class Environment:
                 return scope
             scope = scope.parent
 
-    def define(self, var_name: str, value: Type) -> Type:
+    def define(self, var_name: str, value: T) -> T:
         """
         Create a variable in the current scope
         :param var_name:

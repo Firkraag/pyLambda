@@ -67,7 +67,7 @@ def has_side_effect(ast: Ast) -> bool:
         return has_side_effect(ast.left) or has_side_effect(ast.right)
     if isinstance(ast, IfAst):
         return has_side_effect(ast.cond) or has_side_effect(ast.then) \
-            or has_side_effect(ast.else_)
+               or has_side_effect(ast.else_)
     if isinstance(ast, LetAst):
         return any(has_side_effect(vardef.define) if vardef.define else False for vardef in
                    ast.vardefs) or has_side_effect(ast.body)

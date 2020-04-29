@@ -8,8 +8,9 @@ from typing import Callable, List, TypeVar, Union
 from ast import Ast, LiteralAst, VarAst, VarDefAst, LambdaAst, LetAst, \
     CallAst, ProgAst, IfAst, BinaryAst, AssignAst
 from token_stream import TokenStream, Token
+from utils import gensym
 
-Type = TypeVar('T')  # Can be anything
+T = TypeVar('T')  # Can be anything
 
 
 class Parser:
@@ -59,7 +60,7 @@ class Parser:
         return token == Token('op', char)
 
     def _delimited(self, start: str, stop: str, separator: str,
-                   parser: Callable[[], Type]) -> List[Type]:
+                   parser: Callable[[], T]) -> List[T]:
         """
         :param start:
         :param stop:
@@ -190,7 +191,7 @@ class Parser:
                 return LiteralAst(token.value)
             if token.type == 'var':
                 return VarAst(token.value)
-            return self.unexpected()
+            self.unexpected()
 
         return self._maybe_call(parser)
 
@@ -221,7 +222,25 @@ class Parser:
         """
 
         def parser() -> Ast:
-            return self._maybe_binary(self._parse_atom(), 0)
+            ast = self._maybe_binary(self._parse_atom(), 0)
+            # relational operator short-circuit implementation
+            if isinstance(ast, BinaryAst):
+                # left || right -> (lambda (left) {
+                # if left then left else right})(left)
+                if ast.operator == '||':
+                    iife_param = gensym('left')
+                    ast = CallAst(
+                        LambdaAst(
+                            '',
+                            [iife_param],
+                            IfAst(
+                                VarAst(iife_param),
+                                VarAst(iife_param),
+                                ast.right)),
+                        [ast.left])
+                elif ast.operator == '&&':
+                    ast = IfAst(ast.left, ast.right, LiteralAst(False))
+            return ast
 
         return self._maybe_call(parser)
 

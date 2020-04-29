@@ -109,6 +109,8 @@ def _evaluate_call(call_ast: CallAst, env: Environment, callback: [[Any], Any]) 
         loop(0)
 
     evaluate(call_ast.func, env, call_callback)
+
+
 # pylint: disable=C0111
 
 

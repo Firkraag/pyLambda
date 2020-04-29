@@ -25,6 +25,7 @@ from parse import Parser
 from token_stream import TokenStream
 from utils import apply_op, gensym, has_side_effect
 
+
 # pylint: disable=missing-docstring
 class Optimizer:
     def __init__(self):
@@ -44,6 +45,7 @@ class Optimizer:
                 break
         _make_scope(ast)
         return ast
+
     # pylint: disable=too-many-return-statements
     def _optimize_aux(self, ast: Ast) -> Ast:
         if isinstance(ast, (LiteralAst, VarAst)):
@@ -63,7 +65,7 @@ class Optimizer:
 
         return ast
 
-    def _optimize_prog_ast(self, ast: Ast) -> Ast:
+    def _optimize_prog_ast(self, ast: ProgAst) -> Ast:
         prog = ast.prog
         if not prog:
             self.changes += 1
@@ -76,7 +78,7 @@ class Optimizer:
             return self._optimize_aux(ProgAst(prog[1:]))
         return ProgAst([self._optimize_aux(prog[0]), self._optimize_aux(ProgAst(prog[1:]))])
 
-    def _optimize_call_ast(self, ast: Ast) -> Ast:
+    def _optimize_call_ast(self, ast: CallAst) -> Ast:
         func = ast.func
         # the func part of CallAst is anonymous lambda. So the CallAst is IIFE.
         if isinstance(func, LambdaAst) and (not func.name):
@@ -89,7 +91,7 @@ class Optimizer:
         args = [self._optimize_aux(arg) for arg in ast.args]
         return CallAst(func, args)
 
-    def _optimize_if_ast(self, ast: Ast) -> Ast:
+    def _optimize_if_ast(self, ast: IfAst) -> Ast:
         cond = self._optimize_aux(ast.cond)
         then = self._optimize_aux(ast.then)
         else_ = self._optimize_aux(ast.else_)
@@ -100,9 +102,18 @@ class Optimizer:
             if cond == LiteralAst(False):
                 return else_
             return then
+        if isinstance(cond, VarAst) and _is_constant_var(cond):
+            # For lambda function params, we don't know its current value,
+            # so its current value is assigned None
+            if cond.define.current_value == LiteralAst(False):
+                self.changes += 1
+                return else_
+            if isinstance(cond.define.current_value, (LiteralAst, LambdaAst)):
+                self.changes += 1
+                return then
         return IfAst(cond, then, else_)
 
-    def _optimize_binary_ast(self, ast: Ast) -> Ast:
+    def _optimize_binary_ast(self, ast: BinaryAst) -> Ast:
         left: Ast = self._optimize_aux(ast.left)
         right: Ast = self._optimize_aux(ast.right)
         # if both operands are constance, we can get result
@@ -152,7 +163,7 @@ class Optimizer:
         prog.append(self._optimize_aux(iife_func.body))
         return ProgAst(prog)
 
-    def _optimize_assign_ast(self, ast: Ast) -> Ast:
+    def _optimize_assign_ast(self, ast: AssignAst) -> Ast:
         if isinstance(ast.left, VarAst):
             left: VarAst = ast.left
             right = ast.right
@@ -173,7 +184,7 @@ class Optimizer:
         right = self._optimize_aux(ast.right)
         return AssignAst(left, right)
 
-    def _optimize_lambda_ast(self, ast: Ast) -> Ast:
+    def _optimize_lambda_ast(self, ast: LambdaAst) -> Ast:
         # lambda x(args) y(args) can be optimized to y,
         # a kind of tail call optimization
         if isinstance(ast.body, CallAst):
@@ -247,6 +258,7 @@ def _make_scope(ast: Ast) -> Environment:
                 define: VarDefine = ast.env.get(ast.name)
                 define.refs.append(ast)
                 ast.define = define
+
             _make_scope_aux_var_ast()
         if isinstance(ast, LambdaAst):
             def _make_scope_aux_lambda_ast():
@@ -259,12 +271,15 @@ def _make_scope(ast: Ast) -> Environment:
                 for param in ast.iife_params:
                     env.define(param, VarDefine(kind=3))
                 _make_scope_aux(ast.body, env)
+
+            ast = cast(LambdaAst, ast)
             _make_scope_aux_lambda_ast()
         if isinstance(ast, AssignAst):
             _make_scope_aux(ast.left, env)
             _make_scope_aux(ast.right, env)
             if isinstance(ast.left, VarAst):
                 ast.left.define.assigned += 1
+                ast.left.define.current_value = ast.right
         if isinstance(ast, BinaryAst):
             _make_scope_aux(ast.left, env)
             _make_scope_aux(ast.right, env)
@@ -284,6 +299,7 @@ def _make_scope(ast: Ast) -> Environment:
 
     _make_scope_aux(ast, global_environment)
     return ast.env
+
 
 # pylint: disable=missing-docstring
 def main():

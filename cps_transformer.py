@@ -41,7 +41,7 @@ def _cps_let(let_ast: LetAst, k: Callable[[Ast], Ast]) -> Ast:
         k)
 
 
-def _cps_prog(ast: Ast, k: Callable[[Ast], Ast]) -> Ast:
+def _cps_prog(ast: ProgAst, k: Callable[[Ast], Ast]) -> Ast:
     def cps_body(body: List[Ast]) -> Ast:
         if not body:
             return k(LiteralAst(False))
@@ -99,7 +99,7 @@ def _cps_lambda(lambda_ast: LambdaAst, k: Callable[[Ast], Ast]) -> Ast:
     continuation = gensym("K")
     body = to_cps(
         lambda_ast.body,
-        lambda body: CallAst(VarAst(continuation), [body]))
+        lambda lambda_body: CallAst(VarAst(continuation), [lambda_body]))
     return k(LambdaAst(lambda_ast.name, [continuation] + lambda_ast.params, body))
 
 

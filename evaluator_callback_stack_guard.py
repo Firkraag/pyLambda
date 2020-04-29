@@ -105,7 +105,6 @@ def evaluate(
 
 
 def _evaluate_let(let_ast: LetAst, env: Environment, callback: Callable[[Any], Any]) -> None:
-
     def loop(env: Environment, i: int) -> None:
         if i < len(let_ast.vardefs):
             vardef = let_ast.vardefs[i]

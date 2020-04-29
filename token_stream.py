@@ -9,7 +9,6 @@ from typing import Callable, List
 
 from input_stream import InputStream
 
-
 Token = namedtuple('Token', 'type value')
 NULL_TOKEN = Token('null', 'null')
 
@@ -73,7 +72,7 @@ class TokenStream:
         :return: the string read while predidate is true
         """
         buffer: List[str] = []
-        while (not self._input_stream.eof()) and\
+        while (not self._input_stream.eof()) and \
                 predicate(self._input_stream.peek()):
             buffer.append(self._input_stream.next())
         return ''.join(buffer)
