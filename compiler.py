@@ -17,8 +17,15 @@ from token_stream import TokenStream
 
 # pylint: disable=C0111
 
-
 def to_js(ast: Ast) -> str:
+    js_code = _to_js(ast)
+    # print(js_code)
+    js_code = "use strict;let " + ', '.join(ast.env.vars) + ";" + js_code
+    # print(js_code)
+    return js_code
+
+
+def _to_js(ast: Ast) -> str:
     try:
         function = _MAPPING[type(ast)]
     except Exception:
@@ -40,11 +47,11 @@ def _make_var(name: str) -> str:
 
 
 def _js_binary(ast: Union[AssignAst, BinaryAst]) -> str:
-    return f"({to_js(ast.left)} {ast.operator} {to_js(ast.right)})"
+    return f"({_to_js(ast.left)} {ast.operator} {_to_js(ast.right)})"
 
 
 def _js_assign(ast: AssignAst) -> str:
-    return f"({to_js(ast.left)} = {to_js(ast.right)})"
+    return f"({_to_js(ast.left)} = {_to_js(ast.right)})"
 
 
 def _js_lambda(ast: LambdaAst) -> str:
@@ -53,16 +60,16 @@ def _js_lambda(ast: LambdaAst) -> str:
     code += _make_var(func_name)
     code += "(" + ', '.join(_make_var(var) for var in ast.params) + ") {"
     if ast.iife_params:
-        code += "var "
+        code += "let "
         code += ', '.join(ast.iife_params) + ';'
     code += f'GUARD(arguments, {func_name});'
-    code += "return " + to_js(ast.body) + " })"
+    code += "return " + _to_js(ast.body) + " })"
     return code
 
 
 def _js_let(ast: LetAst) -> str:
     if not ast.vardefs:
-        return to_js(ast.body)
+        return _to_js(ast.body)
     # immediately invoked function expression
     iife = CallAst(
         LambdaAst(
@@ -72,13 +79,13 @@ def _js_let(ast: LetAst) -> str:
                 ast.vardefs[1:],
                 ast.body)),
         [ast.vardefs[0].define or LiteralAst(False)])
-    return f'({to_js(iife)})'
+    return f'({_to_js(iife)})'
 
 
 def _js_if(ast: IfAst) -> str:
-    cond_code = to_js(ast.cond)
-    then_code = to_js(ast.then)
-    else_code = to_js(ast.else_)
+    cond_code = _to_js(ast.cond)
+    then_code = _to_js(ast.then)
+    else_code = _to_js(ast.else_)
     if not _is_bool(ast.cond):
         cond_code += ' !== false'
     return f'({cond_code} ? {then_code} : {else_code})'
@@ -95,13 +102,13 @@ def _is_bool(ast: Ast) -> bool:
 
 def _js_prog(ast: ProgAst) -> str:
     if ast.prog:
-        return "(" + ", ".join(to_js(exp) for exp in ast.prog) + ")"
+        return "(" + ", ".join(_to_js(exp) for exp in ast.prog) + ")"
     return '(false)'
 
 
 def _js_call(ast: CallAst) -> str:
-    func_code = to_js(ast.func)
-    args_code = ", ".join(to_js(arg) for arg in ast.args)
+    func_code = _to_js(ast.func)
+    args_code = ", ".join(_to_js(arg) for arg in ast.args)
     return f'{func_code}({args_code})'
 
 

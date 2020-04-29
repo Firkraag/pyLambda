@@ -1,7 +1,7 @@
 /* Read javascript code from stdin and execute it.
 
  */
-var STACKLEN, IN_EXECUTE = false;
+let STACKLEN, IN_EXECUTE = false;
 function GUARD(args, f) {
     if (--STACKLEN < 0) throw new Continuation(f, args);
 }
@@ -19,7 +19,8 @@ function Execute(f, args) {
         break;
     } catch (ex) {
         if (ex instanceof Continuation) {
-            f = ex.f, args = ex.args;
+            f = ex.f;
+            args = ex.args;
         } else {
             IN_EXECUTE = false;
             throw ex;
@@ -28,15 +29,15 @@ function Execute(f, args) {
     IN_EXECUTE = false;
 }
 if (typeof process != "undefined") (function () {
-    var code = "";
+    let code = "";
     process.stdin.setEncoding("utf8");
     process.stdin.on("readable", function () {
-        var chunk = process.stdin.read();
+        const chunk = process.stdin.read();
         if (chunk) code += chunk;
     });
     process.stdin.on("end", function () {
-        var func = new Function("β_TOPLEVEL, GUARD, Execute", code);
-        console.log(func.toString())
+        const func = new Function("β_TOPLEVEL, GUARD, Execute", code);
+        console.log(func.toString());
         console.error("/*");
         console.time("Runtime");
         Execute(func, [
