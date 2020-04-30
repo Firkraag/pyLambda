@@ -4,7 +4,7 @@
 # pylint: disable=W0212
 # pylint: disable=C0111
 # pylint: disable=too-many-public-methods
-
+from typing import cast
 from unittest import TestCase
 
 from ast import ProgAst, LiteralAst, VarAst, BinaryAst, AssignAst, CallAst, \
@@ -89,7 +89,7 @@ class TestParser(TestCase):
         self.assertEqual(parser._parse_let(),
                          LetAst([VarDefAst("a", LiteralAst(1.0)),
                                  VarDefAst("b", LiteralAst(2.0)), ],
-                                LiteralAst(1.0),))
+                                LiteralAst(1.0)))
         parser = Parser(TokenStream(InputStream('let foo (a = 1, b = 2) foo')))
         self.assertEqual(parser._parse_let(),
                          CallAst(
@@ -101,14 +101,14 @@ class TestParser(TestCase):
         parser = Parser(TokenStream(InputStream('let foo (a, b = 2) foo')))
         self.assertEqual(parser._parse_let(),
                          CallAst(
-                             LambdaAst('foo', ['a', 'b'], VarAst('foo'),),
+                             LambdaAst('foo', ['a', 'b'], VarAst('foo')),
                              [LiteralAst(False), LiteralAst(2), ]))
         parser = Parser(TokenStream(InputStream('let (a, b = 2) 1')))
         self.assertEqual(
             parser._parse_let(),
             LetAst(
                 [VarDefAst('a', None), VarDefAst('b', LiteralAst(2))],
-                LiteralAst(1),))
+                LiteralAst(1)))
 
     def test_parse_vardef(self):
         parser = Parser(TokenStream(InputStream('a = 1')))
@@ -203,7 +203,7 @@ class TestParser(TestCase):
             [LiteralAst(1), LiteralAst(2), ]))
         parser = Parser(TokenStream(InputStream('if 1 then 2 else 3')))
         self.assertEqual(parser._parse_atom(), IfAst(
-            LiteralAst(1.0), LiteralAst(2.0), LiteralAst(3.0),))
+            LiteralAst(1.0), LiteralAst(2.0), LiteralAst(3.0)))
         # parser = Parser(TokenStream(InputStream('let (x = 1) 2')))
         # self.assertEqual(parser.parse_atom(),
         #                 {"type": "let", }
@@ -214,10 +214,10 @@ class TestParser(TestCase):
                          LiteralAst(False))
         parser = Parser(TokenStream(InputStream('lambda (n) 1')))
         self.assertEqual(parser._parse_atom(),
-                         LambdaAst('', ['n'], LiteralAst(1),))
+                         LambdaAst('', ['n'], LiteralAst(1)))
         parser = Parser(TokenStream(InputStream('λ (n) 1')))
         self.assertEqual(parser._parse_atom(),
-                         LambdaAst('', ['n'], LiteralAst(1),))
+                         LambdaAst('', ['n'], LiteralAst(1)))
         parser = Parser(TokenStream(InputStream('let (a = 1, b = 2) 1')))
         self.assertEqual(
             parser._parse_atom(),
@@ -244,12 +244,26 @@ class TestParser(TestCase):
         self.assertEqual(parser._parse_bool(), LiteralAst(False))
 
     def test_parse_expression(self):
+        parser = Parser(TokenStream(InputStream('1 && 2')))
+        self.assertEqual(parser._parse_expression(),
+                         IfAst(LiteralAst(1), LiteralAst(2), LiteralAst(False)))
+        parser = Parser(TokenStream(InputStream('1 || 2')))
+
+        expected_ast = parser._parse_expression()
+        expected_ast = cast(CallAst, expected_ast)
+        func = cast(LambdaAst, expected_ast.func)
+        param = func.params[0]
+        self.assertEqual(expected_ast,
+                         CallAst(
+                             LambdaAst('', [param],
+                                       IfAst(VarAst(param), VarAst(param), LiteralAst(2))),
+                             [LiteralAst(1)]))
         parser = Parser(TokenStream(InputStream('1() + "ab"()(1, "ab")')))
         self.assertEqual(
             parser._parse_expression(),
             CallAst(
                 BinaryAst('+', CallAst(LiteralAst(1), []),
-                          CallAst(LiteralAst('ab'), []),),
+                          CallAst(LiteralAst('ab'), [])),
                 [LiteralAst(1), LiteralAst('ab')]))
         parser = Parser(TokenStream(InputStream('if 1 then 2()()()')))
         self.assertEqual(
