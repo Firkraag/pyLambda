@@ -17,7 +17,7 @@ class TokenStream:
     """
     token stream
     """
-    KEYWORDS = set("if then let else lambda λ true false ".split())
+    KEYWORDS = set("if then let else lambda λ true false js".split())
     IDENTIFIER_START = set(string.ascii_letters + 'λ_')
     IDENTIFIER = set(string.ascii_letters + string.digits + 'λ_?!-<>=')
     OPERATOR = set("+-*/%=&|<>!")

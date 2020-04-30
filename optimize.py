@@ -95,13 +95,11 @@ class Optimizer:
         cond = self._optimize_aux(ast.cond)
         then = self._optimize_aux(ast.then)
         else_ = self._optimize_aux(ast.else_)
-        # if cond is constant, we can decide whether branch to execute
+        # if cond is constant, we can decide which branch to execute
         # before running program.
         if isinstance(cond, LiteralAst):
             self.changes += 1
-            if cond == LiteralAst(False):
-                return else_
-            return then
+            return then if cond else else_
         if isinstance(cond, VarAst) and _is_constant_var(cond):
             # For lambda function params, we don't know its current value,
             # so its current value is assigned None
@@ -116,7 +114,7 @@ class Optimizer:
     def _optimize_binary_ast(self, ast: BinaryAst) -> Ast:
         left: Ast = self._optimize_aux(ast.left)
         right: Ast = self._optimize_aux(ast.right)
-        # if both operands are constance, we can get result
+        # if both operands are constants, we can get result
         # before running program.
         if isinstance(left, LiteralAst) and isinstance(right, LiteralAst):
             self.changes += 1
@@ -307,10 +305,7 @@ def main():
         code = file.read()
     parser = Parser(TokenStream(InputStream(code)))
     ast = parser()
-    ast = to_cps(ast, lambda ast: CallAst(
-        VarAst('β_TOPLEVEL'),
-        [ast],
-    ))
+    ast = to_cps(ast, lambda ast: CallAst(VarAst('β_TOPLEVEL'), [ast]))
     # print(ast)
     ast = Optimizer().optimize(ast)
     # print(ast)

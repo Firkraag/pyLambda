@@ -1,0 +1,1 @@
+(js "function bar(k, n) {if (n > 0) bar(k, n - 1)}")(100);

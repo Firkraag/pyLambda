@@ -6,7 +6,7 @@ compiled from lambda.
 """
 import sys
 from ast import (AssignAst, Ast, BinaryAst, CallAst, IfAst, LambdaAst, LetAst,
-                 LiteralAst, ProgAst, VarAst)
+                 LiteralAst, ProgAst, VarAst, JsAst)
 from typing import Callable, Dict, List, Union
 
 from input_stream import InputStream
@@ -50,6 +50,7 @@ def _cps_prog(ast: ProgAst, k: Callable[[Ast], Ast]) -> Ast:
         return to_cps(
             body[0],
             lambda first: ProgAst([first, cps_body(body[1:])]))
+
     return cps_body(ast.prog)
 
 
@@ -141,6 +142,10 @@ def _cps_binary(ast: Union[AssignAst, BinaryAst], k: Callable[[Ast], Ast]) -> As
     return to_cps(ast.left, cps_left)
 
 
+def _cps_js_raw(ast: JsAst, k: Callable[[Ast], Ast]) -> Ast:
+    return k(ast)
+
+
 _MAPPING: Dict[Ast, Callable] = {
     LiteralAst: _cps_atom,
     VarAst: _cps_atom,
@@ -151,6 +156,7 @@ _MAPPING: Dict[Ast, Callable] = {
     ProgAst: _cps_prog,
     CallAst: _cps_call,
     IfAst: _cps_if,
+    JsAst: _cps_js_raw,
 }
 
 

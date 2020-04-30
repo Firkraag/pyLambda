@@ -6,7 +6,7 @@ parse token_stream into ast
 from typing import Callable, List, TypeVar, Union
 
 from ast import Ast, LiteralAst, VarAst, VarDefAst, LambdaAst, LetAst, \
-    CallAst, ProgAst, IfAst, BinaryAst, AssignAst
+    CallAst, ProgAst, IfAst, BinaryAst, AssignAst, JsAst
 from token_stream import TokenStream, Token
 from utils import gensym
 
@@ -186,6 +186,8 @@ class Parser:
                 return self._parse_lambda('lambda')
             if self._is_kw('λ'):
                 return self._parse_lambda('λ')
+            if self._is_kw('js'):
+                return self._parse_js_raw()
             token = self._token_stream.next()
             if token.type in ('str', 'num'):
                 return LiteralAst(token.value)
@@ -194,6 +196,12 @@ class Parser:
             self.unexpected()
 
         return self._maybe_call(parser)
+
+    def _parse_js_raw(self):
+        self._token_stream.next()
+        token = self._token_stream.next()
+        assert token.type == 'str'
+        return JsAst(token.value)
 
     def _parse_prog(self) -> ProgAst:
         """

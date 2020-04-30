@@ -10,6 +10,9 @@ from environment import Environment
 class Ast:
     env: Optional[Environment] = None
 
+    def __bool__(self):
+        return True
+
 
 @dataclass
 class VarDefine:
@@ -24,8 +27,16 @@ class VarDefine:
 
 
 @dataclass
+class JsAst(Ast):
+    js_code: str
+
+
+@dataclass
 class LiteralAst(Ast):
     value: Union[float, bool, str]
+
+    def __bool__(self):
+        return self.value is not False
 
 
 @dataclass

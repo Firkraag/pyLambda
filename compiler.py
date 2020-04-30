@@ -9,7 +9,7 @@ import sys
 from typing import Union
 
 from ast import Ast, LiteralAst, BinaryAst, VarAst, AssignAst, LetAst, \
-    LambdaAst, IfAst, CallAst, ProgAst
+    LambdaAst, IfAst, CallAst, ProgAst, JsAst
 from input_stream import InputStream
 from parse import Parser
 from token_stream import TokenStream
@@ -19,9 +19,10 @@ from token_stream import TokenStream
 
 def to_js(ast: Ast) -> str:
     js_code = _to_js(ast)
-    # print(js_code)
-    js_code = "use strict;let " + ', '.join(ast.env.vars) + ";" + js_code
-    # print(js_code)
+    global_variables = ', '.join(name for name, define in ast.env.vars.items() if define.assigned)
+    if global_variables:
+        global_variables = "let " + global_variables + ";"
+    js_code = '"use strict";' + global_variables + js_code
     return js_code
 
 
@@ -112,6 +113,10 @@ def _js_call(ast: CallAst) -> str:
     return f'{func_code}({args_code})'
 
 
+def _js_raw(ast: JsAst) -> str:
+    return f'({ast.js_code})'
+
+
 _MAPPING = {
     LiteralAst: _js_atom,
     BinaryAst: _js_binary,
@@ -122,6 +127,7 @@ _MAPPING = {
     IfAst: _js_if,
     CallAst: _js_call,
     ProgAst: _js_prog,
+    JsAst: _js_raw,
 }
 
 

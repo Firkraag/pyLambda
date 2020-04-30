@@ -10,8 +10,10 @@ from optimize import Optimizer
 from parse import Parser
 from token_stream import TokenStream
 
-with open(sys.argv[1]) as file:
-    code = file.read()
+code = ""
+for argv in sys.argv[1:]:
+    with open(argv) as file:
+        code += file.read()
 parser = Parser(TokenStream(InputStream(code)))
 ast = parser()
 ast = to_cps(ast, lambda ast: CallAst(

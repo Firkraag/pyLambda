@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 # encoding: utf-8
 # pylint: disable=missing-docstring
-from ast import (AssignAst, BinaryAst, CallAst, IfAst, LambdaAst, LetAst,
-                 LiteralAst, ProgAst, VarAst, VarDefAst)
 from unittest import TestCase
 
+from ast import (AssignAst, BinaryAst, CallAst, IfAst, LambdaAst, LetAst,
+                 LiteralAst, ProgAst, VarAst, VarDefAst, JsAst)
 from cps_transformer import (_cps_atom, _cps_binary, _cps_call, _cps_if,
-                             _cps_lambda, _cps_let, _cps_prog, to_cps)
+                             _cps_lambda, _cps_let, _cps_prog, to_cps, _cps_js_raw)
 from input_stream import InputStream
 from parse import Parser
 from token_stream import TokenStream
@@ -14,10 +14,13 @@ from token_stream import TokenStream
 
 class CpsTransformerTest(TestCase):
     def test_to_cps(self):
+        js_raw_ast = JsAst("aa")
+        cps_ast = _cps_js_raw(js_raw_ast, lambda x: x)
+        self.assertEqual(cps_ast, js_raw_ast)
         atom_ast = LiteralAst(1.0)
         cps_ast = to_cps(atom_ast, lambda x: x)
         self.assertEqual(atom_ast, cps_ast)
-        let_ast = LetAst([], LiteralAst(False),)
+        let_ast = LetAst([], LiteralAst(False))
         cps_ast = to_cps(let_ast, lambda x: x)
         self.assertEqual(cps_ast, LiteralAst(False))
         prog_ast = ProgAst([])
@@ -28,9 +31,9 @@ class CpsTransformerTest(TestCase):
         self.assertEqual(cps_ast, LiteralAst(1))
         prog_ast = ProgAst([LiteralAst(1), LiteralAst(2)])
         cps_ast = to_cps(prog_ast, lambda x: x)
-        self.assertEqual(cps_ast, ProgAst([LiteralAst(1), LiteralAst(2), ]))
+        self.assertEqual(cps_ast, ProgAst([LiteralAst(1), LiteralAst(2)]))
         if_ast = IfAst(LiteralAst(1), LiteralAst(2), LiteralAst(3))
-        cps_ast = to_cps(if_ast, lambda x: x)
+        cps_ast: CallAst = to_cps(if_ast, lambda x: x)
         expected_ast = CallAst(
             LambdaAst(
                 '',
@@ -73,7 +76,7 @@ class CpsTransformerTest(TestCase):
         # let_ast = LetAst(
         #     [VarDefAst('a', LiteralAst(1)), VarDefAst('b', LiteralAst("a"))],
         #     LiteralAst(False))
-        let_ast = LetAst([], LiteralAst(False),)
+        let_ast = LetAst([], LiteralAst(False), )
         cps_ast = _cps_let(let_ast, lambda x: x)
         self.assertEqual(cps_ast, LiteralAst(False))
         let_ast = LetAst([VarDefAst('a', LiteralAst(1))], VarAst('a'))
@@ -145,7 +148,7 @@ class CpsTransformerTest(TestCase):
                 cps_ast.args[0].params,
                 VarAst(cps_ast.args[0].params[0]))])
         self.assertEqual(cps_ast, expected_ast)
-        if_ast = IfAst(LiteralAst(1), LiteralAst(2), LiteralAst(False),)
+        if_ast = IfAst(LiteralAst(1), LiteralAst(2), LiteralAst(False), )
         cps_ast = _cps_if(if_ast, lambda x: x)
         expected_ast = CallAst(
             LambdaAst(
@@ -204,6 +207,7 @@ class CpsTransformerTest(TestCase):
                 LiteralAst(2)])
         self.assertEqual(cps_ast, expected_ast)
 
+    # TODO
     def test__gensym(self):
         pass
 
@@ -214,3 +218,8 @@ class CpsTransformerTest(TestCase):
         binary_ast = AssignAst(VarAst('a'), LiteralAst(1))
         cps_ast = _cps_binary(binary_ast, lambda x: x)
         self.assertEqual(cps_ast, binary_ast)
+
+    def test__cps_js_raw(self):
+        js_raw_ast = JsAst("aa")
+        cps_ast = _cps_js_raw(js_raw_ast, lambda x: x)
+        self.assertEqual(cps_ast, js_raw_ast)
