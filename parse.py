@@ -3,10 +3,12 @@
 """
 parse token_stream into ast
 """
+import sys
 from typing import Callable, List, TypeVar, Union
 
 from ast import Ast, LiteralAst, VarAst, VarDefAst, LambdaAst, LetAst, \
     CallAst, ProgAst, IfAst, BinaryAst, AssignAst, JsAst
+from input_stream import InputStream
 from token_stream import TokenStream, Token
 from utils import gensym
 
@@ -309,3 +311,10 @@ class Parser:
         """
         self._token_stream.croak(
             f'Unexpected token: {self._token_stream.peek()}')
+
+
+if __name__ == '__main__':
+    with open(sys.argv[1]) as f:
+        code = f.read()
+    ast = Parser(TokenStream(InputStream(code)))()
+    print(ast)

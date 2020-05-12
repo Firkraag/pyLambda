@@ -1,0 +1,16 @@
+catDir = λ(dirname) {
+  forEach(readDir(dirname), λ(f){
+    if not(stringStartsWith(f, ".")) {
+      let (fullname = pathJoin(dirname, f),
+           stat = fstat(fullname)) {
+        if isDirectory(stat) {
+          catDir(fullname);
+        } else if isFile(stat) {
+          print(readFile(fullname));
+        }
+      }
+    }
+  });
+};
+
+catDir(".");
