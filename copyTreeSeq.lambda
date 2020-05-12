@@ -1,0 +1,17 @@
+copyTreeSeq = λ(srcdir, destdir) {
+  makeDir(destdir);
+  forEach(readDir(srcdir), λ(f){
+    let (fullname = pathJoin(srcdir, f),
+         dest = pathJoin(destdir, f),
+         stat = lstat(fullname)) {
+      if isSymlink(stat) {
+        symlink(readlink(fullname), dest);
+      } else if isDirectory(stat) {
+        copyTreeSeq(fullname, dest);
+      } else if isFile(stat) {
+        writeFile(dest, readFile(fullname));
+      }
+    }
+  });
+};
+#copyTreeSeq(".", "/tmp/test");

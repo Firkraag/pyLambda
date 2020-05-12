@@ -1,0 +1,7 @@
+# In lambda language, the following expression is interpreted as
+#if 1 then 2 else {
+#    if 2 then 3 else {
+#        if 3 then 4 else 5
+#    }
+#}
+if 1 then 2 else if 2 then 3 else if 3 then 4 else 5

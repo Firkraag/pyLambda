@@ -1,0 +1,22 @@
+copyTree = λ(srcdir, destdir) {
+  makeDir(destdir);
+  parallel(λ(pcall){
+    forEach(readDir(srcdir), λ(f){
+      #println(f);
+      pcall(λ(){
+        let (fullname = pathJoin(srcdir, f),
+             dest = pathJoin(destdir, f),
+             stat = lstat(fullname)) {
+          if isSymlink(stat) {
+            symlink(readlink(fullname), dest);
+          } else if isDirectory(stat) {
+            copyTree(fullname, dest);
+          } else if isFile(stat) {
+            writeFile(dest, readFile(fullname));
+          }
+        }
+      });
+    });
+  });
+};
+#copyTree("./foo", "/tmp/test");

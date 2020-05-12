@@ -1,0 +1,7 @@
+# test relational operator short-circuit implementation
+a = 1;
+# the right side will not be executed
+true || (a = a + 1);
+# the right side will be executed
+false || (a = a + 1);
+a;

@@ -4,7 +4,7 @@
 parse token_stream into ast
 """
 import sys
-from typing import Callable, List, TypeVar, Union
+from typing import Callable, List, TypeVar, Union, cast
 
 from ast import Ast, LiteralAst, VarAst, VarDefAst, LambdaAst, LetAst, \
     CallAst, ProgAst, IfAst, BinaryAst, AssignAst, JsAst
@@ -237,7 +237,8 @@ class Parser:
             if isinstance(ast, BinaryAst):
                 # left || right -> (lambda (left) {
                 # if left then left else right})(left)
-                if ast.operator == '||':
+                binary_ast = cast(BinaryAst, ast)
+                if binary_ast.operator == '||':
                     iife_param = gensym('left')
                     ast = CallAst(
                         LambdaAst(
@@ -246,10 +247,10 @@ class Parser:
                             IfAst(
                                 VarAst(iife_param),
                                 VarAst(iife_param),
-                                ast.right)),
-                        [ast.left])
-                elif ast.operator == '&&':
-                    ast = IfAst(ast.left, ast.right, LiteralAst(False))
+                                binary_ast.right)),
+                        [binary_ast.left])
+                elif binary_ast.operator == '&&':
+                    ast = IfAst(binary_ast.left, binary_ast.right, LiteralAst(False))
             return ast
 
         return self._maybe_call(parser)
